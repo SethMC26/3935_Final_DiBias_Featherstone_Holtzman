@@ -10,20 +10,19 @@
 package Blender;
 
 import Model.Message;
-import Model.Jondo;
+import Model.Node;
 import merrimackutil.json.types.JSONObject;
 import static merrimackutil.json.JsonIO.readObject;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.HashMap;
 import java.util.Scanner;
 
 /**
  * Handles Connections for Blender specifically Hello Messages
  */
-public class ConnectionHandler implements Runnable{
+public class BlenderConnectionHandler implements Runnable{
     /**
      * Blender server which we are handling the connection of
      */
@@ -39,7 +38,7 @@ public class ConnectionHandler implements Runnable{
      * @param _blender Blender Server we are handling connections for
      * @param _sock Socket we made connection on
      */
-    public ConnectionHandler(Blender _blender, Socket _sock) {
+    public BlenderConnectionHandler(Blender _blender, Socket _sock) {
         blender = _blender;
         sock = _sock;
     }
@@ -67,10 +66,10 @@ public class ConnectionHandler implements Runnable{
             }
 
             //Get jondo from hello message
-            Jondo newJondo = new Jondo(recvMessage.getSrcAddr(),recvMessage.getSrcPort());
+            Node newNode = new Node(recvMessage.getSrcAddr(),recvMessage.getSrcPort());
 
             //add Jondo to blender's routing table and broadcast new node
-            blender.addJondo(newJondo);
+            blender.addJondo(newNode);
 
             //create Response Message with routing table
             Message respondMessage = new Message.Builder("WELCOME").setWelcome(blender.getRoutingTable()).build();

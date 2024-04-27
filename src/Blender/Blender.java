@@ -9,14 +9,14 @@
  */
 package Blender;
 
-import Model.Jondo;
+import Model.Node;
 import Model.Message;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.ConnectException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -43,8 +43,9 @@ public class Blender {
     private ServerSocket server;
     /**
      * Routing Table - HashMap key is UID of Jondo and value is Jondo object
+     * Concurrency helps us deal with case multiple threads(connections) try to modify it at once
      */
-    private ConcurrentHashMap<String, Jondo> routingTable;
+    private ConcurrentHashMap<String, Node> routingTable;
 
     /**
      * Creates a new Blender server to run an specified IP address, port and on threads
@@ -64,7 +65,7 @@ public class Blender {
         ExecutorService pool = Executors.newFixedThreadPool(threads);
 
         try {
-            //create new server
+            //create new server to accept connections
             server = new ServerSocket(port);
 
             //accept connections and send them on a separate thread to be dealt with
@@ -77,7 +78,7 @@ public class Blender {
                 System.out.print("Connected to " + sock.getInetAddress() + ":" + sock.getPort());
 
                 //deal with connection on new thread
-                pool.execute(new ConnectionHandler(this,sock));
+                pool.execute(new BlenderConnectionHandler(this,sock));
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -86,29 +87,30 @@ public class Blender {
 
     /**
      * Adds a new Jondo to Blenders Routing Table and broadcasts new table to crowd
-     * @param newJondo Jondo to add to routing table
+     * @param newNode Jondo to add to routing table
      */
-    public synchronized void addJondo(Jondo newJondo) {
+    public synchronized void addJondo(Node newNode) {
         //check if node is already in our routing table
-        if (routingTable.containsKey(newJondo.getUid())) {
+        if (routingTable.containsKey(newNode.getUid())) {
             System.err.println("Blender: Error adding Jondo, already in Routing Table");
             return;
         }
 
-        routingTable.put(newJondo.getUid(),newJondo);
+        routingTable.put(newNode.getUid(), newNode);
 
         //broadcast new node to crowd
-        Message broadcast = new Message.Builder("BROADCAST").setBroadcast(newJondo).build();
+        Message broadcast = new Message.Builder("BROADCAST").setBroadcast(newNode).build();
 
+        Node currNode = null;
 
         try {
             //for each Jondo in routing table send broadcast message
             for (String uid : routingTable.keySet()) {
                 //Current Jondo
-                Jondo jondo = routingTable.get(uid);
+                currNode = routingTable.get(uid);
 
                 //Connect to Jondo and send broadcast message
-                Socket sock = new Socket(jondo.getAddr(),jondo.getPort());
+                Socket sock = new Socket(currNode.getAddr(), currNode.getPort());
 
                 PrintWriter send = new PrintWriter(sock.getOutputStream());
 
@@ -118,7 +120,12 @@ public class Blender {
                 sock.close();
             }
 
-        } catch (IOException e) {
+        }
+        catch (ConnectException connectException) {
+            System.err.println();
+            System.err.println("Unable to connect to node: " + currNode.getAddr() + ":" + currNode.getPort());
+        }
+        catch (IOException e) {
             System.err.println("Error broadcasting message");
             e.printStackTrace();
         }
@@ -128,7 +135,7 @@ public class Blender {
      * Gets routing table
      * @return HashMap<String, Jondo> key is UID of Jondo, value is Jondo
      */
-    public synchronized ConcurrentHashMap<String, Jondo> getRoutingTable() {
+    public synchronized ConcurrentHashMap<String, Node> getRoutingTable() {
         return routingTable;
     }
 
