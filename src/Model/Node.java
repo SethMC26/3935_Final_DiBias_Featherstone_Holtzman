@@ -23,7 +23,7 @@ import java.util.Base64;
 /**
  * Internal representation of a Model.Jondo
  */
-public class Jondo implements JSONSerializable {
+public class Node implements JSONSerializable {
     private String addr;
     private int port;
     private String uid;
@@ -34,7 +34,7 @@ public class Jondo implements JSONSerializable {
      * @param _addr String IP address of Model.Jondo
      * @param _port Int Port of this Model.Jondo
      */
-    public Jondo(String _addr, int _port) {
+    public Node(String _addr, int _port) {
         addr = _addr;
         port = _port;
 
@@ -42,7 +42,7 @@ public class Jondo implements JSONSerializable {
         createUID();
     }
 
-    public Jondo(JSONObject jondoJSON) throws InvalidObjectException {
+    public Node(JSONObject jondoJSON) throws InvalidObjectException {
         deserialize(jondoJSON);
     }
 

@@ -15,6 +15,7 @@ import merrimackutil.json.types.JSONType;
 import static merrimackutil.json.JsonIO.readObject;
 
 import java.io.InvalidObjectException;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * JSON messages sent between nodes
@@ -53,7 +54,7 @@ public class Message implements JSONSerializable {
     /**
      * New node to add to routing table
      */
-    private Jondo newNode;
+    private Node newNode;
 
     /**
      * Creates Model.Message Object from Builder
@@ -135,7 +136,7 @@ public class Message implements JSONSerializable {
 
                 JSONObject jondoJSON = readObject(messageJSON.getString("newNode"));
 
-                newNode = new Jondo(jondoJSON);
+                newNode = new Node(jondoJSON);
                 break;
             case "DATA":
                 if (!(messageJSON.containsKey("dstAddr") || messageJSON.containsKey("dstPort") ||
@@ -221,6 +222,14 @@ public class Message implements JSONSerializable {
     }
 
     /**
+     *  Gets routingTable from welcome message
+     * @return ConcurrentHashMap of routing table with keys being node UID and values being nodes
+     */
+    public ConcurrentHashMap<String,Node> getRoutingTable() {
+        throw new IllegalArgumentException("Implement method: getRoutingTable");
+    }
+
+    /**
      * Builder class to make Model.Message Object
      */
     public static class Builder {
@@ -231,7 +240,7 @@ public class Message implements JSONSerializable {
         private String dstAddr;
         private int dstPort;
         private String data; //might change later to a different type
-        private Jondo newNode;
+        private Node newNode;
 
         /**
          * Creates basic message object
@@ -271,7 +280,7 @@ public class Message implements JSONSerializable {
          * @param _newNode Model.Jondo to add to routingTable
          * @return this Builder
          */
-        public Builder setBroadcast(Jondo _newNode) {
+        public Builder setBroadcast(Node _newNode) {
             newNode = _newNode;
             return this;
         }
