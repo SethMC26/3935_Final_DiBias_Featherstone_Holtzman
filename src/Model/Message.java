@@ -12,7 +12,6 @@ package Model;
 import merrimackutil.json.JSONSerializable;
 import merrimackutil.json.types.JSONObject;
 import merrimackutil.json.types.JSONType;
-import static merrimackutil.json.JsonIO.readObject;
 
 import java.io.InvalidObjectException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -130,13 +129,12 @@ public class Message implements JSONSerializable {
                 routingTable = messageJSON.getObject("routingTable");
                 break;
             case "BROADCAST":
-                if (!messageJSON.containsKey("newNode")) {
+                if (!(messageJSON.containsKey("newNodeAddr") || (messageJSON.containsKey("newNodePort")))) {
                     throw new InvalidObjectException("BROADCAST message should contain new Node");
                 }
 
-                JSONObject jondoJSON = readObject(messageJSON.getString("newNode"));
-
-                newNode = new Node(jondoJSON);
+                //gets new node based on nodes addr and port
+                newNode = new Node(messageJSON.getString("newNodeAddr"),messageJSON.getInt("newNodePort"));
                 break;
             case "DATA":
                 if (!(messageJSON.containsKey("dstAddr") || messageJSON.containsKey("dstPort") ||
@@ -177,7 +175,8 @@ public class Message implements JSONSerializable {
                 return messageJSON;
             case "BROADCAST":
                 messageJSON.put("type",type);
-                messageJSON.put("newNode",newNode.serialize());
+                messageJSON.put("newNodeAddr",newNode.getAddr());
+                messageJSON.put("newNodePort",newNode.getPort());
 
                 return messageJSON;
             case "DATA":
