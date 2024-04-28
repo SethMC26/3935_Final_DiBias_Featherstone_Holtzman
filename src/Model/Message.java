@@ -220,6 +220,28 @@ public class Message implements JSONSerializable {
     public int getSrcPort() {
         return srcPort;
     }
+    /**
+     * Gets Destination IP Address
+     * @return String of IP Address
+     */
+    public String getDstAddr() {
+        return dstAddr;
+    }
+    /**
+     * Gets Destination Port
+     * @return int of port
+     */
+    public int getDstPort() {
+        return dstPort;
+    }
+
+    /**
+     * Gets data from message
+     * @return String of data
+     */
+    public String getData() {
+        return data;
+    }
 
     /**
      *  Gets routingTable from welcome message

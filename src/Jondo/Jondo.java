@@ -18,6 +18,7 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -81,51 +82,96 @@ public class Jondo {
             throw new RuntimeException(e);
         }
 
-        //create thread pool for incoming connections
-        ExecutorService pool = Executors.newFixedThreadPool(threads);
+        //start up service thread to handle incoming connects
+        //Handle connections on separate thread so we can send data on this one
+        Thread serviceThread = new Thread(new ServiceThread());
+        serviceThread.start();
 
-        try {
-            //create new Server to accept connections
-            server = new ServerSocket(port);
-
-            while(true) {
-                System.out.println();
-                System.out.print("Jondo waiting for connections...");
-
-                //get connection
-                Socket sock = server.accept();
-
-                System.out.print("Connected to " + sock.getInetAddress() + ":" + sock.getPort());
-
-                //handle connections on new thread
-                pool.execute(new JondoConnectionHandler(sock,this));
-
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public String send(String data) {
-        throw new IllegalArgumentException("Method send must be implemented");
-    }
-
-    public synchronized void addJondo(Node newJondo) {
-        //check if node is already in our routing table
-        if (routingTable.containsKey(newJondo.getUid())) {
-            System.err.println("Blender: Error adding Jondo, already in Routing Table");
-            return;
-        }
-
-        routingTable.put(newJondo.getUid(),newJondo);
     }
 
     /**
-     * Gets routing table
-     * @return HashMap<String, Jondo> key is UID of Jondo, value is Jondo
+     * Sends a message with data to a destination and gets response
+     * This method is blocking and will wait until data is returned
+     * @param data String of data to send
+     * @param dstAddr IP address of destination
+     * @param dstPort Int of port
+     * @return String of reply data, null if there is an error
      */
-    public synchronized ConcurrentHashMap<String, Node> getRoutingTable() {
-        return routingTable;
+    public String send(String data, String dstAddr, int dstPort) {
+        //random number gen
+        Random randGen = new Random();
+
+        Object[] nodeList = routingTable.keySet().toArray();
+        //get a random number to pick a random index from keys
+        int randNum = randGen.nextInt(nodeList.length);
+
+        //get a random node
+        Node randNode = routingTable.get((String) nodeList[randNum]);
+
+        //create message with data to send to node
+        Message dataMsg = new Message.Builder("DATA").setData(dstAddr,dstPort,data).build();
+
+        try {
+            //connect to random node
+            Socket sock = new Socket(randNode.getAddr(),randNode.getPort());
+
+            //get input streams
+            Scanner recv = new Scanner(sock.getInputStream());
+            PrintWriter send = new PrintWriter(sock.getOutputStream());
+
+            //send message to node
+            send.println(dataMsg.serialize());
+
+            //get reply and parse it
+            String reply = recv.nextLine();
+            Message replyMessage = new Message(readObject(reply));
+
+            if (replyMessage.getType().equals("DATA")) {
+                System.err.println("Jondo Connection: Message must be of DATA Type");
+                System.err.println(replyMessage);
+                return null;
+            }
+
+            return replyMessage.getData();
+        } catch (Exception e) {
+            System.err.println("An error has occured while sending message returning null");
+            e.printStackTrace();
+            System.err.println("Attempting to recover gracefully");
+            return null;
+        }
+    }
+
+    /**
+     * Service thread allows us to dedicate a thread with the task of dealing with incoming connections and sending them
+     * to new threads
+     *
+     * This means we can keep the main thread for sending and receiving data
+     */
+    private class ServiceThread implements Runnable {
+        @Override
+        public void run() {
+            try {
+                server = new ServerSocket(port);
+
+                ExecutorService pool = Executors.newFixedThreadPool(threads);
+
+                while(true) {
+                    System.out.println();
+                    System.out.print("Jondo waiting for connections...");
+
+                    //get connection
+                    Socket sock = server.accept();
+
+                    System.out.print("Connected to " + sock.getInetAddress() + ":" + sock.getPort());
+
+                    //handle connections on new thread
+                    pool.execute(new JondoConnectionHandler(sock, routingTable));
+                }
+
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
 }
