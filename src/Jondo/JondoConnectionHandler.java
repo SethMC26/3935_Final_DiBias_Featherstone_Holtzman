@@ -31,7 +31,7 @@ public class JondoConnectionHandler implements Runnable{
      */
     private Socket sock;
     /**
-     * Routingtable
+     * Routingtable that this current Jondo knows about
      */
     private ConcurrentHashMap<String, Node> routingTable;
     /**
@@ -69,8 +69,10 @@ public class JondoConnectionHandler implements Runnable{
             Scanner recv = new Scanner(sock.getInputStream());
             PrintWriter send = new PrintWriter(sock.getOutputStream(), true);
 
+            String recvString = recv.nextLine();
+
             //read message sent to server
-            JSONObject recvJSON = readObject(recv.nextLine());
+            JSONObject recvJSON = readObject(recvString);
 
             //parse Message
             Message recvMessage = new Message(recvJSON);
@@ -79,7 +81,7 @@ public class JondoConnectionHandler implements Runnable{
                 //we get broadcast from Blender of a new node joining network
                 case "BROADCAST":
                     //get new Jondo to add from message and add it to routing table
-                    Node newJondo = new Node(recvMessage.getSrcAddr(),recvMessage.getSrcPort());
+                    Node newJondo = recvMessage.getNewNode();
 
                     //check if node is already in our routing table
                     if (routingTable.containsKey(newJondo.getUid())) {
@@ -87,11 +89,14 @@ public class JondoConnectionHandler implements Runnable{
                         return;
                     }
 
+                    System.out.println("Got Broadcast message updating routingTable");
                     //put node in routing table
                     routingTable.put(newJondo.getUid(), newJondo);
                     break;
                 //we are forwarded data from another node
                 case "DATA":
+                    System.out.println();
+                    System.out.println("Got Data message");
                     Socket nodeSock = null;
                     Scanner nodeRecv = null;
                     PrintWriter nodeSend = null;
@@ -112,7 +117,10 @@ public class JondoConnectionHandler implements Runnable{
                         nodeSock = new Socket(randNode.getAddr(),randNode.getPort());
                         //get streams
                         nodeRecv = new Scanner(nodeSock.getInputStream());
-                        nodeSend = new PrintWriter(nodeSock.getOutputStream());
+                        nodeSend = new PrintWriter(nodeSock.getOutputStream(),true);
+
+                        System.out.println();
+                        System.out.println("Got Heads forwarding to node..." + nodeSock.getRemoteSocketAddress());
 
                     }
                     else {
@@ -120,7 +128,8 @@ public class JondoConnectionHandler implements Runnable{
                         //connect to destination and get input streams
                         nodeSock = new Socket(recvMessage.getDstAddr(),recvMessage.getDstPort());
                         nodeRecv = new Scanner(nodeSock.getInputStream());
-                        nodeSend = new PrintWriter(nodeSock.getOutputStream());
+                        nodeSend = new PrintWriter(nodeSock.getOutputStream(),true);
+                        System.out.println("Got tails sending to destination..." + nodeSock.getRemoteSocketAddress());
                     }
 
                     //forward original message to node/dst and wait for reply
@@ -129,6 +138,7 @@ public class JondoConnectionHandler implements Runnable{
                     //get Reply string from node/dst
                     String nodeReply = nodeRecv.nextLine();
 
+                    System.out.println("Got response forwarding it to " + sock.getRemoteSocketAddress());
                     //send reply to original connected node
                     send.println(nodeReply);
 
