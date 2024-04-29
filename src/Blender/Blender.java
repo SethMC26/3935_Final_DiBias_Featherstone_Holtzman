@@ -70,12 +70,11 @@ public class Blender {
 
             //accept connections and send them on a separate thread to be dealt with
             while (true) {
-                System.out.println();
-                System.out.print("Server waiting for connections...");
+                System.out.println("Server waiting for connections");
                 //get connection
                 Socket sock = server.accept();
 
-                System.out.print("Connected to " + sock.getInetAddress() + ":" + sock.getPort());
+                System.out.println("Connected to " + sock.getInetAddress() + ":" + sock.getPort() + "\n");
 
                 //deal with connection on new thread
                 pool.execute(new BlenderConnectionHandler(this,sock));
@@ -104,20 +103,28 @@ public class Blender {
         Node currNode = null;
 
         try {
+            System.out.println();
             //for each Jondo in routing table send broadcast message
             for (String uid : routingTable.keySet()) {
-                //Current Jondo
-                currNode = routingTable.get(uid);
 
-                //Connect to Jondo and send broadcast message
-                Socket sock = new Socket(currNode.getAddr(), currNode.getPort());
+                if (!uid.equals(newNode.getUid())) {
 
-                PrintWriter send = new PrintWriter(sock.getOutputStream());
+                    //Current Jondo
+                    currNode = routingTable.get(uid);
 
-                send.println(broadcast);
+                    //Connect to Jondo and send broadcast message
+                    Socket nodeSock = new Socket(currNode.getAddr(), currNode.getPort());
 
-                //close connection
-                sock.close();
+                    PrintWriter send = new PrintWriter(nodeSock.getOutputStream(),true);
+
+                    System.out.println("Sending broadcast to " + nodeSock.getRemoteSocketAddress());
+
+                    send.println(broadcast.serialize());
+
+                    //close connection
+                    nodeSock.close();
+                }
+
             }
 
         }
@@ -133,7 +140,7 @@ public class Blender {
 
     /**
      * Gets routing table
-     * @return HashMap<String, Jondo> key is UID of Jondo, value is Jondo
+     * @return HashMap<String, Node> key is UID of Jondo, value is Jondo
      */
     public synchronized ConcurrentHashMap<String, Node> getRoutingTable() {
         return routingTable;
