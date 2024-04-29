@@ -27,6 +27,7 @@ public class testServerEndpoint {
 
                 send.println(recvMsg.serialize());
                 System.out.println("Sending message back to " + sock.getRemoteSocketAddress());
+                sock.close();
             }
         }
         catch(Exception e) {
