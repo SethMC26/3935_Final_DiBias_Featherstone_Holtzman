@@ -47,19 +47,25 @@ public class Jondo {
         try {
             //connect to blender
             Socket sock = new Socket(blenderAddr,blenderPort);
-
             //Get io streams
             Scanner recv = new Scanner(sock.getInputStream());
             PrintWriter send = new PrintWriter(sock.getOutputStream(),true);
 
             //create hello message
-            Message helloMessage = new Message.Builder("hello").setHello(addr,port).build();
+            Message helloMessage = new Message.Builder("HELLO").setHello(addr,port).build();
 
             //send hello message
             send.println(helloMessage.serialize());
 
+
+            String recvString = "";
+
+            while(recv.hasNextLine()) {
+                recvString += recv.nextLine();
+            }
+
             //Wait for welcome response and read it
-            JSONObject recvJSON = readObject(recv.nextLine());
+            JSONObject recvJSON = readObject(recvString);
 
             //Turn JSON into message object
             Message recvMsg = new Message(recvJSON);
@@ -71,7 +77,6 @@ public class Jondo {
                 System.exit(1);
             }
 
-            //NEEDS TO BE IMPLEMENTED
             routingTable = recvMsg.getRoutingTable();
 
             //close connection
@@ -98,6 +103,7 @@ public class Jondo {
      * @return String of reply data, null if there is an error
      */
     public String send(String data, String dstAddr, int dstPort) {
+
         //random number gen
         Random randGen = new Random();
 
@@ -117,7 +123,7 @@ public class Jondo {
 
             //get input streams
             Scanner recv = new Scanner(sock.getInputStream());
-            PrintWriter send = new PrintWriter(sock.getOutputStream());
+            PrintWriter send = new PrintWriter(sock.getOutputStream(),true);
 
             //send message to node
             send.println(dataMsg.serialize());
@@ -126,7 +132,7 @@ public class Jondo {
             String reply = recv.nextLine();
             Message replyMessage = new Message(readObject(reply));
 
-            if (replyMessage.getType().equals("DATA")) {
+            if (!replyMessage.getType().equals("DATA")) {
                 System.err.println("Jondo Connection: Message must be of DATA Type");
                 System.err.println(replyMessage);
                 return null;
@@ -156,13 +162,11 @@ public class Jondo {
                 ExecutorService pool = Executors.newFixedThreadPool(threads);
 
                 while(true) {
-                    System.out.println();
-                    System.out.print("Jondo waiting for connections...");
-
                     //get connection
                     Socket sock = server.accept();
 
-                    System.out.print("Connected to " + sock.getInetAddress() + ":" + sock.getPort());
+                    System.out.println();
+                    System.out.println("Connected to " + sock.getInetAddress() + ":" + sock.getPort());
 
                     //handle connections on new thread
                     pool.execute(new JondoConnectionHandler(sock, routingTable));
@@ -172,6 +176,7 @@ public class Jondo {
                 throw new RuntimeException(e);
             }
         }
+
     }
 
 }
