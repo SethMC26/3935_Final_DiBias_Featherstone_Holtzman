@@ -10,6 +10,7 @@
 package Model;
 
 import merrimackutil.json.JSONSerializable;
+import merrimackutil.json.types.JSONArray;
 import merrimackutil.json.types.JSONObject;
 import merrimackutil.json.types.JSONType;
 
@@ -36,7 +37,7 @@ public class Message implements JSONSerializable {
     /**
      * Routing Table object
      */
-    private Object routingTable;
+    private ConcurrentHashMap<String,Node> routingTable;
     /**
      * Destination IP address
      */
@@ -126,7 +127,19 @@ public class Message implements JSONSerializable {
                     throw new InvalidObjectException("WELCOME message should contain routingTable");
                 }
 
-                routingTable = messageJSON.getObject("routingTable");
+                //create new Routing table as hashmap
+                ConcurrentHashMap<String,Node> newRoutingTable = new ConcurrentHashMap<>();
+                //get JSONArray and turn it into routingTable concurrency hashMap
+                JSONArray nodeArray = messageJSON.getArray("routingTable");
+
+                for(int i = 0;i < nodeArray.size();i++) {
+                    JSONObject nodeJSON = nodeArray.getObject(i);
+                    Node node = new Node(nodeJSON);
+                    newRoutingTable.put(node.getUid(),node);
+                }
+
+                //set routingTable to new RoutingTable
+                routingTable = newRoutingTable;
                 break;
             case "BROADCAST":
                 if (!(messageJSON.containsKey("newNodeAddr") || (messageJSON.containsKey("newNodePort")))) {
@@ -170,7 +183,12 @@ public class Message implements JSONSerializable {
                 return messageJSON;
             case "WELCOME":
                 messageJSON.put("type",type);
-                messageJSON.put("routingTable",routingTable);
+
+                //turn nodes in routing table into JSONArray
+                JSONArray routingJSONArray = new JSONArray();
+                routingJSONArray.addAll(routingTable.values());
+
+                messageJSON.put("routingTable",routingJSONArray);
 
                 return messageJSON;
             case "BROADCAST":
@@ -235,6 +253,14 @@ public class Message implements JSONSerializable {
     }
 
     /**
+     * Gets new node from the broadcast message
+     * @return Node object of the new Node
+     */
+    public Node getNewNode() {
+        return newNode;
+    }
+
+    /**
      * Gets data from message
      * @return String of data
      */
@@ -247,7 +273,7 @@ public class Message implements JSONSerializable {
      * @return ConcurrentHashMap of routing table with keys being node UID and values being nodes
      */
     public ConcurrentHashMap<String,Node> getRoutingTable() {
-        throw new IllegalArgumentException("Implement method: getRoutingTable");
+        return routingTable;
     }
 
     /**
@@ -257,7 +283,7 @@ public class Message implements JSONSerializable {
         private String type;
         private String srcAddr;
         private int srcPort;
-        private Object routingTable;
+        private ConcurrentHashMap<String,Node> routingTable;
         private String dstAddr;
         private int dstPort;
         private String data; //might change later to a different type
@@ -290,7 +316,7 @@ public class Message implements JSONSerializable {
          *
          * @return this Builder
          */
-        public Builder setWelcome(Object _routingTable) {
+        public Builder setWelcome(ConcurrentHashMap<String,Node> _routingTable) {
             routingTable = _routingTable;
             return this;
         }
