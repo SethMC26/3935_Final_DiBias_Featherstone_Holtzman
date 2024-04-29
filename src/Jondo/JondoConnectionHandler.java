@@ -96,7 +96,7 @@ public class JondoConnectionHandler implements Runnable{
                 //we are forwarded data from another node
                 case "DATA":
                     System.out.println();
-                    System.out.println("Got Data message");
+                    System.out.println("Got Data message with data: " + recvMessage.getData());
                     Socket nodeSock = null;
                     Scanner nodeRecv = null;
                     PrintWriter nodeSend = null;
@@ -119,7 +119,6 @@ public class JondoConnectionHandler implements Runnable{
                         nodeRecv = new Scanner(nodeSock.getInputStream());
                         nodeSend = new PrintWriter(nodeSock.getOutputStream(),true);
 
-                        System.out.println();
                         System.out.println("Got Heads forwarding to node..." + nodeSock.getRemoteSocketAddress());
 
                     }
