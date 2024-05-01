@@ -1,5 +1,48 @@
 # 3935_DiBias_Featherstone_Holtzman
 
+# Blender
+The Blender is responsible for allow new nodes to join the networking by giving a routing table to the new node and telling everyone else in the crowd a new node has joined. 
+
+### Blender Object
+Creating a new Blender object requires:
+- _addr - String with IP address that this Blender will run on
+- _Port - Int port that Blender will listen on
+- _threads - Int number of threads Blender will use, determines amount of concurrent connections we can handle
+  
+Example:
+```java
+Blender blender = new Blender("127.0.0.1", 5000, 10)
+```
+
+### Quick Start
+add more later
+```bash
+java -jar dist/Blender.jar -c example_config
+```
+
+
+# Jondo
+The Blender is responsible for allow new nodes to join the networking by giving a routing table to the new node and telling everyone else in the crowd a new node has joined. 
+
+### Jondo Object
+Creating a new Jondo object requires:
+- _addr - String with IP address that this Jondo will run on
+- _Port - Int port that Jondo will listen on
+- _threads - Int number of threads Jondo will use, determines the amount of concurrent connections we can handle
+- blenderAddr - String IP Address of the blender server we use to join Crowd
+- blenderPort - int Port of the blender server we use to join the Crowd
+  
+Example
+```java
+Jondo jondo = new Jondo("127.0.0.1", 6000, 3, "127.0.0.1", 5000)
+```
+
+### Quick Start
+Add more later
+```bash
+java -jar dist/Jondo.jar -c example_config
+```
+
 # Message 
 Messages use JSON marshaling to send informations between all nodes on our network. Currently there are 4 types of Messages HELLO, WELCOME, BROADCAST, DATA
 
