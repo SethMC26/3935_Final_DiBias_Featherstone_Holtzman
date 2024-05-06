@@ -1,0 +1,76 @@
+<project name="DistributedHashTable" default="compile" basedir=".">
+    <description>
+        Implementation of a Distributed Hash Table node system with Jondo and Blender.
+    </description>
+
+    <!-- Set global properties -->
+    <property name="src" location="src"/>
+    <property name="testsrc" location="tests"/>
+    <property name="build" location="build"/>
+    <property name="dist" location="dist"/>
+    <property name="api" location="api"/>
+    <property name="lib" location="lib"/>
+    <property name="blender.jarname" value="Blender.jar"/>
+    <property name="jondo.jarname" value="Jondo.jar"/>
+
+    <target name="init">
+        <mkdir dir="${build}"/>
+        <mkdir dir="${build}/tests"/>
+        <mkdir dir="${api}"/>
+    </target>
+
+    <!-- Compile the Java code from ${src} into ${build} -->
+    <target name="compile" depends="init" description="Compile source code">
+        <javac includeantruntime="false" srcdir="${src}" destdir="${build}" debug="true" debuglevel="lines,vars,source">
+            <compilerarg value="-Xlint:deprecation,unchecked"/>
+            <classpath>
+                <fileset dir="${lib}" includes="**/*.jar"/>
+            </classpath>
+        </javac>
+    </target>
+
+    <!-- Create Blender JAR -->
+    <target name="dist-blender" depends="compile" description="Generate the jar file for Blender">
+        <mkdir dir="${dist}"/>
+        <jar jarfile="${dist}/${blender.jarname}" basedir="${build}">
+            <zipgroupfileset dir="${lib}" includes="**/*.jar"/> <!-- Include all library JARs -->
+            <include name="Blender/**"/>
+            <include name="Model/**"/>
+            <manifest>
+                <attribute name="Main-Class" value="Blender.BlenderDriver"/>
+                <attribute name="Class-Path" value="."/>
+            </manifest>
+        </jar>
+    </target>
+
+    <!-- Create Jondo JAR -->
+    <target name="dist-jondo" depends="compile" description="Generate the jar file for Jondo">
+        <mkdir dir="${dist}"/>
+        <jar jarfile="${dist}/${jondo.jarname}" basedir="${build}">
+            <zipgroupfileset dir="${lib}" includes="**/*.jar"/> <!-- Include all library JARs -->
+            <include name="Jondo/**"/>
+            <include name="Model/**"/>
+            <manifest>
+                <attribute name="Main-Class" value="Jondo.JondoDriver"/>
+                <attribute name="Class-Path" value="."/>
+            </manifest>
+        </jar>
+    </target>
+
+    <!-- Run Blender -->
+    <target name="run-blender" depends="dist-blender" description="Run Blender jar file">
+        <java jar="${dist}/${blender.jarname}" fork="true"/>
+    </target>
+
+    <!-- Run Jondo -->
+    <target name="run-jondo" depends="dist-jondo" description="Run Jondo jar file">
+        <java jar="${dist}/${jondo.jarname}" fork="true"/>
+    </target>
+
+    <!-- Clean up build directories -->
+    <target name="clean" description="Clean up">
+        <delete dir="${build}"/>
+        <delete dir="${dist}"/>
+        <delete dir="${api}"/>
+    </target>
+</project>
