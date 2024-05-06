@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,6 +28,14 @@ import static merrimackutil.json.JsonIO.readObject;
  * Handle the incoming connections for each Jondo
  */
 public class JondoConnectionHandler implements Runnable {
+    /**
+     * Address of this Jondo
+     */
+    private String addr;
+    /**
+     * Port of this Jondo
+     */
+    private int port;
     /**
      * Socket of incoming connection
      */
@@ -51,7 +60,10 @@ public class JondoConnectionHandler implements Runnable {
      * @param _routingTable Routing Table ConcurrentHashMap with keys being string
      *                      UID and values being Node object
      */
-    public JondoConnectionHandler(Socket _sock, ConcurrentHashMap<String, Node> _routingTable) {
+    public JondoConnectionHandler(Socket _sock, ConcurrentHashMap<String, Node> _routingTable, String _addr,
+            int _port) {
+        addr = _addr;
+        port = _port;
         sock = _sock;
 
         // get routing table from JONDO
@@ -83,79 +95,83 @@ public class JondoConnectionHandler implements Runnable {
             switch (recvMessage.getType()) {
                 // we get broadcast from Blender of a new node joining network
                 case "BROADCAST":
-                    // get new Jondo to add from message and add it to routing table
-                    Node newJondo = recvMessage.getNewNode();
-
-                    // check if node is already in our routing table
-                    if (routingTable.containsKey(newJondo.getUid())) {
-                        System.err.println("Blender: Error adding Jondo, already in Routing Table");
-                        return;
-                    }
-
-                    System.out.println("Got Broadcast message updating routingTable");
-                    // put node in routing table
-                    routingTable.put(newJondo.getUid(), newJondo);
+                    handleBroadcast(recvMessage);
                     break;
                 // we are forwarded data from another node
                 case "DATA":
-                    System.out.println();
-                    System.out.println("Got Data message with data: " + recvMessage.getData());
-                    Socket nodeSock = null;
-                    Scanner nodeRecv = null;
-                    PrintWriter nodeSend = null;
-
-                    // flip a coin if heads(true) forward message if tails(false) send it to
-                    // destination
-                    // Coin flip merely determines who we send messages to(socket we connect to)
-                    if (flipCoin()) {
-                        // send message to random node
-                        // get a list of our keys(Node UIDS)
-                        Object[] nodeList = routingTable.keySet().toArray();
-                        // get a random number to pick a random index from keys
-                        int randNum = randGen.nextInt(nodeList.length);
-
-                        // get a random node
-                        Node randNode = routingTable.get((String) nodeList[randNum]);
-
-                        // connect to random node
-                        nodeSock = new Socket(randNode.getAddr(), randNode.getPort());
-                        // get streams
-                        nodeRecv = new Scanner(nodeSock.getInputStream());
-                        nodeSend = new PrintWriter(nodeSock.getOutputStream(), true);
-
-                        System.out.println("Got Heads forwarding to node..." + nodeSock.getRemoteSocketAddress());
-
-                    } else {
-                        // coin flip was tails so we send node to destination
-                        // connect to destination and get input streams
-                        nodeSock = new Socket(recvMessage.getDstAddr(), recvMessage.getDstPort());
-                        nodeRecv = new Scanner(nodeSock.getInputStream());
-                        nodeSend = new PrintWriter(nodeSock.getOutputStream(), true);
-                        System.out.println("Got tails sending to destination..." + nodeSock.getRemoteSocketAddress());
-                    }
-
-                    // forward original message to node/dst and wait for reply
-                    nodeSend.println(recvMessage.serialize());
-
-                    // get Reply string from node/dst
-                    String nodeReply = nodeRecv.nextLine();
-
-                    System.out.println("Got response forwarding it to " + sock.getRemoteSocketAddress());
-                    // send reply to original connected node
-                    send.println(nodeReply);
-
-                    // close connections
-                    nodeSock.close();
-                    sock.close();
-                    break;
-                default:
-                    System.err.println("Jondo Connection: Message must be of DATA or Broadcast type");
-                    System.err.println(recvMessage);
+                    handleData(recvMessage, send);
                     break;
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private void handleBroadcast(Message recvMessage) {
+        // get new Jondo to add from message and add it to routing table
+        Node newJondo = recvMessage.getNewNode();
+        // check if node is already in our routing table
+        if (!routingTable.containsKey(newJondo.getUid())) {
+            // put node in routing table
+            routingTable.put(newJondo.getUid(), newJondo);
+            System.out.println("Got Broadcast message updating routingTable");
+        } else {
+            // print error message
+            System.err.println("Blender: Error adding Jondo, already in Routing Table");
+        }
+    }
+
+    private void handleData(Message recvMessage, PrintWriter send) throws IOException {
+        if (thisNodeIsDestination(recvMessage)) {
+            processMessage(recvMessage);
+        } else if (flipCoin()) {
+            forwardMessageToRandomNode(recvMessage);
+        } else {
+            forwardMessageToDestination(recvMessage);
+        }
+        Message ackMessage = new Message.Builder("ACK")
+                .setAck(addr, port)
+                .build();
+        System.out.println("Sending ACK: " + ackMessage.serialize());
+        send.println(ackMessage.serialize());
+    }
+
+    private void forwardMessageToRandomNode(Message message) throws IOException {
+        Node randNode = selectRandomNodeExcludingSender(message.getSrcAddr(), message.getSrcPort());
+        if (randNode != null) {
+            try (Socket nodeSock = new Socket(randNode.getAddr(), randNode.getPort());
+                    PrintWriter nodeSend = new PrintWriter(nodeSock.getOutputStream(), true)) {
+                nodeSend.println(message.serialize());
+                System.out.println("Forwarded to random node: " + randNode.getAddr());
+            }
+        }
+    }
+
+    private void forwardMessageToDestination(Message message) throws IOException {
+        try (Socket nodeSock = new Socket(message.getDstAddr(), message.getDstPort());
+                PrintWriter nodeSend = new PrintWriter(nodeSock.getOutputStream(), true)) {
+            nodeSend.println(message.serialize());
+            System.out.println("Sent directly to destination: " + message.getDstAddr());
+        }
+    }
+
+    private boolean thisNodeIsDestination(Message message) {
+        return this.addr.equals(message.getDstAddr()) && this.port == message.getDstPort();
+    }
+
+    private Node selectRandomNodeExcludingSender(String srcAddr, int srcPort) {
+        ArrayList<String> keys = new ArrayList<>(routingTable.keySet());
+        keys.removeIf(key -> {
+            Node node = routingTable.get(key);
+            return node.getAddr().equals(srcAddr) && node.getPort() == srcPort;
+        });
+
+        if (keys.isEmpty()) {
+            return null; // No available nodes to forward to
+        }
+
+        int randIndex = randGen.nextInt(keys.size());
+        return routingTable.get(keys.get(randIndex));
     }
 
     /**
@@ -170,5 +186,10 @@ public class JondoConnectionHandler implements Runnable {
         int ranNum = rand.nextInt(100);
 
         return ranNum <= probHead;
+    }
+
+    private void processMessage(Message message) {
+        // process message
+        System.out.println("Processing message: " + message);
     }
 }

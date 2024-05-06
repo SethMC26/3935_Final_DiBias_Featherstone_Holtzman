@@ -132,8 +132,9 @@ public class Jondo {
             String reply = recv.nextLine();
             Message replyMessage = new Message(readObject(reply));
 
-            if (!replyMessage.getType().equals("DATA")) {
-                System.err.println("Jondo Connection: Message must be of DATA Type");
+            if (!replyMessage.getType().equals("ACK")) {
+                System.out.println("Error: " + replyMessage.getType());
+                System.err.println("Jondo Connection: Message must be of ACK Type");
                 System.err.println(replyMessage);
                 return null;
             }
@@ -169,7 +170,7 @@ public class Jondo {
                     System.out.println("Connected to " + sock.getInetAddress() + ":" + sock.getPort());
 
                     //handle connections on new thread
-                    pool.execute(new JondoConnectionHandler(sock, routingTable));
+                    pool.execute(new JondoConnectionHandler(sock, routingTable, addr, port));
                 }
 
             } catch (IOException e) {

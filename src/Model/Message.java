@@ -159,8 +159,16 @@ public class Message implements JSONSerializable {
                 dstPort = messageJSON.getInt("dstPort");
                 data = messageJSON.getString("data");
                 break;
+            case "ACK":
+                if (!(messageJSON.containsKey("srcAddr") && messageJSON.containsKey("srcPort"))) {
+                    throw new InvalidObjectException("ACK message should contain srcAddr and srcPort");
+                }
+
+                srcAddr = messageJSON.getString("srcAddr");
+                srcPort = messageJSON.getInt("srcPort");
+                break;
             default:
-                throw new IllegalArgumentException("Bad type - Must be HELLO, WELCOME, BROADCAST, DATA");
+                throw new IllegalArgumentException("Bad type - Must be HELLO, WELCOME, BROADCAST, DATA, ACK");
         }
     }
 
@@ -204,8 +212,14 @@ public class Message implements JSONSerializable {
                 messageJSON.put("data",data);
 
                 return messageJSON;
+            case "ACK":
+                messageJSON.put("type",type);
+                messageJSON.put("srcAddr",srcAddr);
+                messageJSON.put("srcPort",srcPort);
+
+                return messageJSON;
             default:
-                throw new IllegalArgumentException("Bad type - Must be HELLO, WELCOME, BROADCAST, DATA");
+                throw new IllegalArgumentException("Bad type - Must be HELLO, WELCOME, BROADCAST, DATA, ACK");
         }
     }
 
@@ -345,6 +359,12 @@ public class Message implements JSONSerializable {
             dstAddr = _dstAddr;
             dstPort = _dstPort;
             data = _data;
+            return this;
+        }
+
+        public Builder setAck(String _srcAddr, int _srcPort) {
+            srcAddr = _srcAddr;
+            srcPort = _srcPort;
             return this;
         }
 
