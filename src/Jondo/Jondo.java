@@ -130,8 +130,11 @@ public class Jondo {
 
             //get reply and parse it
             String reply = recv.nextLine();
+            //System.out.println("Reply: " + reply);
             Message replyMessage = new Message(readObject(reply));
 
+            System.out.println("Reply TYPE: " + replyMessage.getType());
+            System.out.println(replyMessage.getType().equals("ACK"));
             if (!replyMessage.getType().equals("ACK")) {
                 System.out.println("Error: " + replyMessage.getType());
                 System.err.println("Jondo Connection: Message must be of ACK Type");
@@ -139,7 +142,9 @@ public class Jondo {
                 return null;
             }
 
-            return replyMessage.getData();
+            //return replyMessage.getData();
+            // Crude i know, but we can clean this up
+            return replyMessage.serialize();
         } catch (Exception e) {
             System.err.println("An error has occured while sending message returning null");
             e.printStackTrace();

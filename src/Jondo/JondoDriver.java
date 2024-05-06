@@ -95,8 +95,8 @@ public class JondoDriver {
                     JSONObject rply = readObject(reply);
                     try {
                         Message rplyMsg = new Message(rply);
-                        if (rplyMsg.getType() != "ACK") {
-                            System.out.println("Error for message: " + message);
+                        if (!rplyMsg.getType().equals("ACK")) {
+                            System.out.println("Error for message TYPE: " + rplyMsg.getType());
                         } else {
                             System.out.println("ACK Received");
                         }
