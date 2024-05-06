@@ -16,6 +16,7 @@ import merrimackutil.json.types.JSONObject;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.security.SecureRandom;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,7 +26,7 @@ import static merrimackutil.json.JsonIO.readObject;
 /**
  * Handle the incoming connections for each Jondo
  */
-public class JondoConnectionHandler implements Runnable{
+public class JondoConnectionHandler implements Runnable {
     /**
      * Socket of incoming connection
      */
@@ -45,13 +46,15 @@ public class JondoConnectionHandler implements Runnable{
 
     /**
      * Creates new Connection hander
-     * @param _sock Socket we received connection on
-     * @param _routingTable Routing Table ConcurrentHashMap with keys being string UID and values being Node object
+     * 
+     * @param _sock         Socket we received connection on
+     * @param _routingTable Routing Table ConcurrentHashMap with keys being string
+     *                      UID and values being Node object
      */
     public JondoConnectionHandler(Socket _sock, ConcurrentHashMap<String, Node> _routingTable) {
         sock = _sock;
 
-        //get routing table from JONDO
+        // get routing table from JONDO
         routingTable = _routingTable;
 
         // 2/3 chance of fording node
@@ -65,35 +68,35 @@ public class JondoConnectionHandler implements Runnable{
     @Override
     public void run() {
         try {
-            //get input and output streams
+            // get input and output streams
             Scanner recv = new Scanner(sock.getInputStream());
             PrintWriter send = new PrintWriter(sock.getOutputStream(), true);
 
             String recvString = recv.nextLine();
 
-            //read message sent to server
+            // read message sent to server
             JSONObject recvJSON = readObject(recvString);
 
-            //parse Message
+            // parse Message
             Message recvMessage = new Message(recvJSON);
 
             switch (recvMessage.getType()) {
-                //we get broadcast from Blender of a new node joining network
+                // we get broadcast from Blender of a new node joining network
                 case "BROADCAST":
-                    //get new Jondo to add from message and add it to routing table
+                    // get new Jondo to add from message and add it to routing table
                     Node newJondo = recvMessage.getNewNode();
 
-                    //check if node is already in our routing table
+                    // check if node is already in our routing table
                     if (routingTable.containsKey(newJondo.getUid())) {
                         System.err.println("Blender: Error adding Jondo, already in Routing Table");
                         return;
                     }
 
                     System.out.println("Got Broadcast message updating routingTable");
-                    //put node in routing table
+                    // put node in routing table
                     routingTable.put(newJondo.getUid(), newJondo);
                     break;
-                //we are forwarded data from another node
+                // we are forwarded data from another node
                 case "DATA":
                     System.out.println();
                     System.out.println("Got Data message with data: " + recvMessage.getData());
@@ -101,47 +104,47 @@ public class JondoConnectionHandler implements Runnable{
                     Scanner nodeRecv = null;
                     PrintWriter nodeSend = null;
 
-                    //flip a coin if heads(true) forward message if tails(false) send it to destination
-                    //Coin flip merely determines who we send messages to(socket we connect to)
+                    // flip a coin if heads(true) forward message if tails(false) send it to
+                    // destination
+                    // Coin flip merely determines who we send messages to(socket we connect to)
                     if (flipCoin()) {
-                        //send message to random node
-                        //get a list of our keys(Node UIDS)
+                        // send message to random node
+                        // get a list of our keys(Node UIDS)
                         Object[] nodeList = routingTable.keySet().toArray();
-                        //get a random number to pick a random index from keys
+                        // get a random number to pick a random index from keys
                         int randNum = randGen.nextInt(nodeList.length);
 
-                        //get a random node
+                        // get a random node
                         Node randNode = routingTable.get((String) nodeList[randNum]);
 
-                        //connect to random node
-                        nodeSock = new Socket(randNode.getAddr(),randNode.getPort());
-                        //get streams
+                        // connect to random node
+                        nodeSock = new Socket(randNode.getAddr(), randNode.getPort());
+                        // get streams
                         nodeRecv = new Scanner(nodeSock.getInputStream());
-                        nodeSend = new PrintWriter(nodeSock.getOutputStream(),true);
+                        nodeSend = new PrintWriter(nodeSock.getOutputStream(), true);
 
                         System.out.println("Got Heads forwarding to node..." + nodeSock.getRemoteSocketAddress());
 
-                    }
-                    else {
-                        //coin flip was tails so we send node to destination
-                        //connect to destination and get input streams
-                        nodeSock = new Socket(recvMessage.getDstAddr(),recvMessage.getDstPort());
+                    } else {
+                        // coin flip was tails so we send node to destination
+                        // connect to destination and get input streams
+                        nodeSock = new Socket(recvMessage.getDstAddr(), recvMessage.getDstPort());
                         nodeRecv = new Scanner(nodeSock.getInputStream());
-                        nodeSend = new PrintWriter(nodeSock.getOutputStream(),true);
+                        nodeSend = new PrintWriter(nodeSock.getOutputStream(), true);
                         System.out.println("Got tails sending to destination..." + nodeSock.getRemoteSocketAddress());
                     }
 
-                    //forward original message to node/dst and wait for reply
+                    // forward original message to node/dst and wait for reply
                     nodeSend.println(recvMessage.serialize());
 
-                    //get Reply string from node/dst
+                    // get Reply string from node/dst
                     String nodeReply = nodeRecv.nextLine();
 
                     System.out.println("Got response forwarding it to " + sock.getRemoteSocketAddress());
-                    //send reply to original connected node
+                    // send reply to original connected node
                     send.println(nodeReply);
 
-                    //close connections
+                    // close connections
                     nodeSock.close();
                     sock.close();
                     break;
@@ -157,11 +160,13 @@ public class JondoConnectionHandler implements Runnable{
 
     /**
      * Flips a biased coin the bias being probHead
-     * We generate a random number between 0-100 if it is less than probHeads we return true
-     * @return
+     * We generate a random number between 0-100 if it is less than probHeads we
+     * return true
+     * 
+     * @return boolean indicating if the result is heads (true) or tails (false)
      */
     private boolean flipCoin() {
-        Random rand = new Random();
+        SecureRandom rand = new SecureRandom();
         int ranNum = rand.nextInt(100);
 
         return ranNum <= probHead;
