@@ -221,11 +221,6 @@ public class JondoConnectionHandler implements Runnable {
         System.out.println("Vote results for vote ID " + vote.getVoteId() + ": " + results);
     }
 
-    private void handleVoteResults(Message recvMessage) {
-        Vote vote = recvMessage.getVote();
-        List<String> results = vote.getResults();
-        System.out.println("Vote results for vote ID " + vote.getVoteId() + ": " + results);
-    }
 
     /**
      * Forwards a message directly to its destination.

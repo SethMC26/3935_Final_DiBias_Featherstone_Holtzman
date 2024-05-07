@@ -86,10 +86,6 @@ public class Vote implements JSONSerializable {
         return results;
     }
 
-    public List<String> getResults() {
-        return results;
-    }
-
     /**
      * Serializes this Vote object into a JSON string.
      *
