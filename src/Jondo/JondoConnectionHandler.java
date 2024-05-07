@@ -120,6 +120,9 @@ public class JondoConnectionHandler implements Runnable {
                 case "VOTE_BROADCAST":
                     handleVoteBroadcast(recvMessage);
                     break;
+                case "VOTE_CAST":
+                    handleVoteCast(recvMessage);
+                    break;
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -155,6 +158,20 @@ public class JondoConnectionHandler implements Runnable {
         send.println(ackMessage.serialize());
     }
 
+    private void handleVoteCast(Message recvMessage) {
+        // If we recieve another nodes vote cast message, we need to flip a coin and
+        // forward it to the Blender
+        try {
+            if (flipCoin()) {
+                forwardMessageToRandomNode(recvMessage);
+            } else {
+                forwardMessageToDestination(recvMessage);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void handleVoteBroadcast(Message message) {
         Vote vote = message.getVote(); // Assuming getVote() method exists
         jondoDriver.setCurrentVote(vote);
@@ -165,16 +182,12 @@ public class JondoConnectionHandler implements Runnable {
         System.out.println("Please cast your vote by using the command '.vote'");
     }
 
-    private int getUserVoteChoice(Vote vote) {
-        Scanner scanner = new Scanner(System.in);
-        System.out.print("Enter your choice (number): ");
-        int choice = Integer.parseInt(scanner.nextLine().trim());
-        System.out.println("Choice: " + choice);
-        while (choice < 1 || choice > vote.getOptions().size()) {
-            System.out.println("Invalid choice. Please enter a number between 1 and " + vote.getOptions().size());
-            choice = Integer.parseInt(scanner.nextLine().trim());
+    private void forwardMessageToDestination(Message message) throws IOException {
+        try (Socket nodeSock = new Socket(message.getDstAddr(), message.getDstPort());
+                PrintWriter nodeSend = new PrintWriter(nodeSock.getOutputStream(), true)) {
+            nodeSend.println(message.serialize());
+            System.out.println("Sent directly to destination: " + message.getDstAddr());
         }
-        return choice;
     }
 
     private void forwardMessageToRandomNode(Message message) throws IOException {
@@ -185,14 +198,6 @@ public class JondoConnectionHandler implements Runnable {
                 nodeSend.println(message.serialize());
                 System.out.println("Forwarded to random node: " + randNode.getAddr());
             }
-        }
-    }
-
-    private void forwardMessageToDestination(Message message) throws IOException {
-        try (Socket nodeSock = new Socket(message.getDstAddr(), message.getDstPort());
-                PrintWriter nodeSend = new PrintWriter(nodeSock.getOutputStream(), true)) {
-            nodeSend.println(message.serialize());
-            System.out.println("Sent directly to destination: " + message.getDstAddr());
         }
     }
 

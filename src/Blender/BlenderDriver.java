@@ -75,7 +75,10 @@ public class BlenderDriver {
                     String voteOptions = scanner.nextLine().trim();
                     String[] voteOptionsArray = voteOptions.split(",");
                     System.out.println(voteOptionsArray);
-                    Vote vote = new Vote.Builder("PLACEHOLDERID", voteDetails, Arrays.asList(voteOptionsArray)).build();
+                    Vote vote = new Vote.Builder("PLACEHOLDERID")
+                            .setQuestion(voteDetails)
+                            .setOptions(Arrays.asList(voteOptionsArray))
+                            .build();
                     blender.broadcastVote(vote);
                     System.out.println("Vote broadcasted: " + vote.serialize());
                     break;

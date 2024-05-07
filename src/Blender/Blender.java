@@ -18,6 +18,7 @@ import java.io.PrintWriter;
 import java.net.ConnectException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -49,6 +50,10 @@ public class Blender {
      */
     private ConcurrentHashMap<String, Node> routingTable;
     /**
+     * HashMap key is voteId and value is HashMap of options and their tallies
+     */
+    private ConcurrentHashMap<String, HashMap<String, Integer>> voteTallies;
+    /**
      * Pool of threads to handle connections
      */
     private ExecutorService pool;
@@ -68,6 +73,7 @@ public class Blender {
 
         // create new routing table
         routingTable = new ConcurrentHashMap<>();
+        voteTallies = new ConcurrentHashMap<>();
 
         // create new pools for blender connections
         pool = Executors.newFixedThreadPool(threads);
@@ -126,6 +132,14 @@ public class Blender {
             System.err.println("Error broadcasting message");
             e.printStackTrace();
         }
+    }
+
+    public synchronized void tallyVote(String voteId, String option) {
+        voteTallies.computeIfAbsent(voteId, k -> new HashMap<>()).merge(option, 1, Integer::sum);
+    }
+    
+    public synchronized HashMap<String, Integer> getVoteResults(String voteId) {
+        return voteTallies.getOrDefault(voteId, new HashMap<>());
     }
 
     /**

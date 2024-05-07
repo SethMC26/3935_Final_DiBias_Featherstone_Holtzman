@@ -19,6 +19,7 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,8 +41,10 @@ public class Jondo {
     private ServerSocket server;
     private ConcurrentHashMap<String, Node> routingTable;
     private JondoDriver jondoDriver;
+    private Random randGen;
 
-    public Jondo(String _addr, int _port, int _threads, String _blenderAddr, int _blenderPort, JondoDriver _jondoDriver) {
+    public Jondo(String _addr, int _port, int _threads, String _blenderAddr, int _blenderPort,
+            JondoDriver _jondoDriver) {
         addr = _addr;
         port = _port;
         blenderAddr = _blenderAddr;
@@ -50,6 +53,8 @@ public class Jondo {
         jondoDriver = _jondoDriver;
 
         routingTable = new ConcurrentHashMap<>();
+
+        randGen = new Random();
 
         // Connect to blender and try to join crowd
         try {
@@ -161,27 +166,41 @@ public class Jondo {
         }
     }
 
-    void sendVoteCast(String voteId, String selection) {
-        Vote vote = new Vote.Builder(voteId, null, null) // Assuming nulls are handled in Builder
+    protected void sendVoteCast(String voteId, String selection) {
+        Vote vote = new Vote.Builder(voteId)
                 .setSelection(selection)
                 .build();
         Message voteCastMessage = new Message.Builder("VOTE_CAST")
                 .setVoteCast(blenderAddr, blenderPort, vote)
                 .build();
         try {
-            forwardMessageToDestination(voteCastMessage);
+            forwardMessageToRandomNode(voteCastMessage);
         } catch (IOException e) {
             System.err.println("Error sending vote cast message");
             e.printStackTrace();
         }
     }
 
-    private void forwardMessageToDestination(Message message) throws IOException {
-        try (Socket nodeSock = new Socket(message.getDstAddr(), message.getDstPort());
-                PrintWriter nodeSend = new PrintWriter(nodeSock.getOutputStream(), true)) {
-            nodeSend.println(message.serialize());
-            System.out.println("Sent directly to destination: " + message.getDstAddr());
+    private void forwardMessageToRandomNode(Message message) throws IOException {
+        Node randNode = selectRandomNode(message.getSrcAddr(), message.getSrcPort());
+        if (randNode != null) {
+            try (Socket nodeSock = new Socket(randNode.getAddr(), randNode.getPort());
+                    PrintWriter nodeSend = new PrintWriter(nodeSock.getOutputStream(), true)) {
+                nodeSend.println(message.serialize());
+                System.out.println("Forwarded to random node: " + randNode.getAddr());
+            }
         }
+    }
+
+    private Node selectRandomNode(String srcAddr, int srcPort) {
+        ArrayList<String> keys = new ArrayList<>(routingTable.keySet());
+
+        if (keys.isEmpty()) {
+            return null; // No available nodes to forward to
+        }
+
+        int randIndex = randGen.nextInt(keys.size());
+        return routingTable.get(keys.get(randIndex));
     }
 
     /**
@@ -207,7 +226,8 @@ public class Jondo {
                     System.out.println("Connected to " + sock.getInetAddress() + ":" + sock.getPort());
 
                     // handle connections on new thread
-                    pool.execute(new JondoConnectionHandler(sock, routingTable, addr, port, blenderAddr, blenderPort, jondoDriver));
+                    pool.execute(new JondoConnectionHandler(sock, routingTable, addr, port, blenderAddr, blenderPort,
+                            jondoDriver));
                 }
 
             } catch (IOException e) {

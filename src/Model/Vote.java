@@ -42,6 +42,10 @@ public class Vote implements JSONSerializable {
         return options;
     }
 
+    public String getSelection() {
+        return selection;
+    }
+
     @Override
     public String serialize() {
         return this.toJSONType().getFormattedJSON();
@@ -54,22 +58,21 @@ public class Vote implements JSONSerializable {
 
         JSONObject jsonObject = (JSONObject) jsonType;
 
-        if (!jsonObject.containsKey("voteId") || !jsonObject.containsKey("question")
-                || !jsonObject.containsKey("options"))
-            throw new InvalidObjectException("voteId, question, and options are required fields.");
-
+        // Required fields
         voteId = jsonObject.getString("voteId");
-        question = jsonObject.getString("question");
-        JSONArray options = jsonObject.getArray("options");
-        System.out.println("DESERIALIZED OPTIONS: " + options.getFormattedJSON());
-        List<String> optionsList = new ArrayList<>();
-        for (int i = 0; i < options.size(); i++) {
-            optionsList.add(options.getString(i));
+
+        // Optional fields
+        if (jsonObject.containsKey("question")) {
+            question = jsonObject.getString("question");
         }
-        this.options = optionsList;
-
-        System.out.println("DESERIALIZED OPTIONS LIST: " + optionsList.toString());
-
+        if (jsonObject.containsKey("options")) {
+            JSONArray options = jsonObject.getArray("options");
+            List<String> optionsList = new ArrayList<>();
+            for (int i = 0; i < options.size(); i++) {
+            optionsList.add(options.getString(i));
+            }
+            this.options = optionsList;
+        }
         if (jsonObject.containsKey("selection")) {
             selection = jsonObject.getString("selection");
         }
@@ -111,10 +114,18 @@ public class Vote implements JSONSerializable {
         private String voterId;
         private String timestamp;
 
-        public Builder(String voteId, String question, List<String> options) {
+        public Builder(String voteId) {
             this.voteId = voteId;
+        }
+
+        public Builder setQuestion(String question) {
             this.question = question;
+            return this;
+        }
+
+        public Builder setOptions(List<String> options) {
             this.options = options;
+            return this;
         }
 
         public Builder setSelection(String selection) {

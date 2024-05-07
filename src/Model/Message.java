@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class Message implements JSONSerializable {
     /**
      * Type of message we are sending
-     *  Hello, Welcome, Data, Broadcast
+     * Hello, Welcome, Data, Broadcast
      */
     private String type;
     /**
@@ -37,7 +37,7 @@ public class Message implements JSONSerializable {
     /**
      * Routing Table object
      */
-    private ConcurrentHashMap<String,Node> routingTable;
+    private ConcurrentHashMap<String, Node> routingTable;
     /**
      * Destination IP address
      */
@@ -49,7 +49,7 @@ public class Message implements JSONSerializable {
     /**
      * Destination Data
      */
-    private String data; //might change later to a different type
+    private String data; // might change later to a different type
     /**
      * Vote to broadcast
      */
@@ -81,7 +81,8 @@ public class Message implements JSONSerializable {
      * Deserializes Message from JSON Object
      *
      * @param messageJSON JSONObject to deserialize
-     * @throws InvalidObjectException Throws if JSON is invalid such as invalid fields
+     * @throws InvalidObjectException Throws if JSON is invalid such as invalid
+     *                                fields
      */
     public Message(JSONObject messageJSON) throws InvalidObjectException {
         deserialize(messageJSON);
@@ -101,7 +102,8 @@ public class Message implements JSONSerializable {
      * Deserialize the JSONObject into internal message representation
      *
      * @param jsonType JSONObject that we want to deserialize
-     * @throws InvalidObjectException Throws if JSON does not contain expected keys or if it does not have JSONObject
+     * @throws InvalidObjectException Throws if JSON does not contain expected keys
+     *                                or if it does not have JSONObject
      */
     @Override
     public void deserialize(JSONType jsonType) throws InvalidObjectException {
@@ -114,11 +116,11 @@ public class Message implements JSONSerializable {
             throw new InvalidObjectException("Model.Message json does not have TYPE field");
         }
 
-        //get Type of message
+        // get Type of message
         type = messageJSON.getString("type");
 
-        //deserialize JSONObject based on type of JSON
-        switch(type) {
+        // deserialize JSONObject based on type of JSON
+        switch (type) {
             case "HELLO":
                 if (!(messageJSON.containsKey("srcAddr") && messageJSON.containsKey("srcPort"))) {
                     throw new InvalidObjectException("HELLO Model.Message should contain srcAddr and srcPort");
@@ -132,18 +134,18 @@ public class Message implements JSONSerializable {
                     throw new InvalidObjectException("WELCOME message should contain routingTable");
                 }
 
-                //create new Routing table as hashmap
-                ConcurrentHashMap<String,Node> newRoutingTable = new ConcurrentHashMap<>();
-                //get JSONArray and turn it into routingTable concurrency hashMap
+                // create new Routing table as hashmap
+                ConcurrentHashMap<String, Node> newRoutingTable = new ConcurrentHashMap<>();
+                // get JSONArray and turn it into routingTable concurrency hashMap
                 JSONArray nodeArray = messageJSON.getArray("routingTable");
 
-                for(int i = 0;i < nodeArray.size();i++) {
+                for (int i = 0; i < nodeArray.size(); i++) {
                     JSONObject nodeJSON = nodeArray.getObject(i);
                     Node node = new Node(nodeJSON);
-                    newRoutingTable.put(node.getUid(),node);
+                    newRoutingTable.put(node.getUid(), node);
                 }
 
-                //set routingTable to new RoutingTable
+                // set routingTable to new RoutingTable
                 routingTable = newRoutingTable;
                 break;
             case "BROADCAST":
@@ -151,8 +153,8 @@ public class Message implements JSONSerializable {
                     throw new InvalidObjectException("BROADCAST message should contain new Node");
                 }
 
-                //gets new node based on nodes addr and port
-                newNode = new Node(messageJSON.getString("newNodeAddr"),messageJSON.getInt("newNodePort"));
+                // gets new node based on nodes addr and port
+                newNode = new Node(messageJSON.getString("newNodeAddr"), messageJSON.getInt("newNodePort"));
                 break;
             case "DATA":
                 if (!(messageJSON.containsKey("dstAddr") || messageJSON.containsKey("dstPort") ||
@@ -171,6 +173,16 @@ public class Message implements JSONSerializable {
 
                 vote = new Vote(messageJSON.getObject("vote"));
                 break;
+            case "VOTE_CAST":
+                if (!(messageJSON.containsKey("dstAddr") && messageJSON.containsKey("dstPort")
+                        && messageJSON.containsKey("vote"))) {
+                    throw new InvalidObjectException("VOTE_CAST message should contain dstAddr, dstPort, and vote");
+                }
+
+                dstAddr = messageJSON.getString("dstAddr");
+                dstPort = messageJSON.getInt("dstPort");
+                vote = new Vote(messageJSON.getObject("vote"));
+                break;
             case "ACK":
                 if (!(messageJSON.containsKey("srcAddr") && messageJSON.containsKey("srcPort"))) {
                     throw new InvalidObjectException("ACK message should contain srcAddr and srcPort");
@@ -180,6 +192,7 @@ public class Message implements JSONSerializable {
                 srcPort = messageJSON.getInt("srcPort");
                 break;
             default:
+                System.out.println("Type: " + type);
                 throw new IllegalArgumentException("Bad type - Must be HELLO, WELCOME, BROADCAST, DATA, ACK");
         }
     }
@@ -193,55 +206,58 @@ public class Message implements JSONSerializable {
     public JSONType toJSONType() {
         JSONObject messageJSON = new JSONObject();
 
-        //switch between types to and put needed fields into JSONObject
+        // switch between types to and put needed fields into JSONObject
         switch (type) {
             case "HELLO":
-                messageJSON.put("type",type);
-                messageJSON.put("srcAddr",srcAddr);
-                messageJSON.put("srcPort",srcPort);
+                messageJSON.put("type", type);
+                messageJSON.put("srcAddr", srcAddr);
+                messageJSON.put("srcPort", srcPort);
 
                 return messageJSON;
             case "WELCOME":
-                messageJSON.put("type",type);
+                messageJSON.put("type", type);
 
-                //turn nodes in routing table into JSONArray
+                // turn nodes in routing table into JSONArray
                 JSONArray routingJSONArray = new JSONArray();
                 routingJSONArray.addAll(routingTable.values());
 
-                messageJSON.put("routingTable",routingJSONArray);
+                messageJSON.put("routingTable", routingJSONArray);
 
                 return messageJSON;
             case "BROADCAST":
-                messageJSON.put("type",type);
-                messageJSON.put("newNodeAddr",newNode.getAddr());
-                messageJSON.put("newNodePort",newNode.getPort());
+                messageJSON.put("type", type);
+                messageJSON.put("newNodeAddr", newNode.getAddr());
+                messageJSON.put("newNodePort", newNode.getPort());
 
                 return messageJSON;
             case "DATA":
-                messageJSON.put("type",type);
-                messageJSON.put("dstAddr",dstAddr);
-                messageJSON.put("dstPort",dstPort);
-                messageJSON.put("data",data);
+                messageJSON.put("type", type);
+                messageJSON.put("dstAddr", dstAddr);
+                messageJSON.put("dstPort", dstPort);
+                messageJSON.put("data", data);
 
                 return messageJSON;
             case "VOTE_BROADCAST":
-                messageJSON.put("type",type);
-                messageJSON.put("vote",vote.toJSONType());
+                messageJSON.put("type", type);
+                messageJSON.put("vote", vote.toJSONType());
 
                 return messageJSON;
             case "VOTE_CAST":
-                messageJSON.put("type",type);
-                messageJSON.put("vote",vote.toJSONType());
+                messageJSON.put("type", type);
+                messageJSON.put("vote", vote.toJSONType());
+                messageJSON.put("dstAddr", dstAddr);
+                messageJSON.put("dstPort", dstPort);
 
                 return messageJSON;
             case "ACK":
-                messageJSON.put("type",type);
-                messageJSON.put("srcAddr",srcAddr);
-                messageJSON.put("srcPort",srcPort);
+                messageJSON.put("type", type);
+                messageJSON.put("srcAddr", srcAddr);
+                messageJSON.put("srcPort", srcPort);
 
                 return messageJSON;
             default:
-                throw new IllegalArgumentException("Bad type - Must be HELLO, WELCOME, BROADCAST, DATA, VOTE_BROADCAST, ACK");
+                throw new IllegalArgumentException(
+                        "Bad type - Must be HELLO, WELCOME, BROADCAST, DATA, VOTE_BROADCAST, ACK");
         }
     }
 
@@ -252,6 +268,7 @@ public class Message implements JSONSerializable {
 
     /**
      * Gets type of message
+     * 
      * @return String of type
      */
     public String getType() {
@@ -260,6 +277,7 @@ public class Message implements JSONSerializable {
 
     /**
      * Gets Source IP Address
+     * 
      * @return String of IP Address
      */
     public String getSrcAddr() {
@@ -268,20 +286,25 @@ public class Message implements JSONSerializable {
 
     /**
      * Gets Source Port
+     * 
      * @return int of port
      */
     public int getSrcPort() {
         return srcPort;
     }
+
     /**
      * Gets Destination IP Address
+     * 
      * @return String of IP Address
      */
     public String getDstAddr() {
         return dstAddr;
     }
+
     /**
      * Gets Destination Port
+     * 
      * @return int of port
      */
     public int getDstPort() {
@@ -290,6 +313,7 @@ public class Message implements JSONSerializable {
 
     /**
      * Gets new node from the broadcast message
+     * 
      * @return Node object of the new Node
      */
     public Node getNewNode() {
@@ -298,22 +322,24 @@ public class Message implements JSONSerializable {
 
     /**
      * Gets data from message
+     * 
      * @return String of data
      */
     public String getData() {
         return data;
     }
 
-
     public Vote getVote() {
         return vote;
     }
 
     /**
-     *  Gets routingTable from welcome message
-     * @return ConcurrentHashMap of routing table with keys being node UID and values being nodes
+     * Gets routingTable from welcome message
+     * 
+     * @return ConcurrentHashMap of routing table with keys being node UID and
+     *         values being nodes
      */
-    public ConcurrentHashMap<String,Node> getRoutingTable() {
+    public ConcurrentHashMap<String, Node> getRoutingTable() {
         return routingTable;
     }
 
@@ -324,15 +350,16 @@ public class Message implements JSONSerializable {
         private String type;
         private String srcAddr;
         private int srcPort;
-        private ConcurrentHashMap<String,Node> routingTable;
+        private ConcurrentHashMap<String, Node> routingTable;
         private String dstAddr;
         private int dstPort;
-        private String data; //might change later to a different type
+        private String data; // might change later to a different type
         private Vote vote;
         private Node newNode;
 
         /**
          * Creates basic message object
+         * 
          * @param _type String type field of message: HELLO, WELCOME, BROADCAST, DATA
          */
         public Builder(String _type) {
@@ -341,6 +368,7 @@ public class Message implements JSONSerializable {
 
         /**
          * Creates HELLO message object
+         * 
          * @param _srcAddr Source IP address of Model.Jondo trying to join network
          * @param _srcPort Port Int address of Model.Jondo trying to join network
          *
@@ -354,11 +382,12 @@ public class Message implements JSONSerializable {
 
         /**
          * Creates WELCOME message
+         * 
          * @param _routingTable Routing Table to send to new node
          *
          * @return this Builder
          */
-        public Builder setWelcome(ConcurrentHashMap<String,Node> _routingTable) {
+        public Builder setWelcome(ConcurrentHashMap<String, Node> _routingTable) {
             routingTable = _routingTable;
             return this;
         }
@@ -379,7 +408,7 @@ public class Message implements JSONSerializable {
          *
          * @param _dstAddr IP address of destination of message
          * @param _dstPort Port of destination of Model.Message
-         * @param _data Data to send to destination
+         * @param _data    Data to send to destination
          *
          * @return this Builder
          */

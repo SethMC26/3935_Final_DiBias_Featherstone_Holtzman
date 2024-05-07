@@ -11,9 +11,12 @@ package Blender;
 
 import Model.Message;
 import Model.Node;
+import Model.Vote;
 import merrimackutil.json.types.JSONObject;
 import static merrimackutil.json.JsonIO.readObject;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
@@ -22,7 +25,7 @@ import java.util.Scanner;
 /**
  * Handles Connections for Blender specifically Hello Messages
  */
-public class BlenderConnectionHandler implements Runnable{
+public class BlenderConnectionHandler implements Runnable {
     /**
      * Blender server which we are handling the connection of
      */
@@ -36,7 +39,7 @@ public class BlenderConnectionHandler implements Runnable{
      * Handles connection to Blender specifically hello messages
      *
      * @param _blender Blender Server we are handling connections for
-     * @param _sock Socket we made connection on
+     * @param _sock    Socket we made connection on
      */
     public BlenderConnectionHandler(Blender _blender, Socket _sock) {
         blender = _blender;
@@ -48,40 +51,61 @@ public class BlenderConnectionHandler implements Runnable{
      */
     public void run() {
         try {
-            //get input and output streams
+            // get input and output streams
             Scanner recv = new Scanner(sock.getInputStream());
             PrintWriter send = new PrintWriter(sock.getOutputStream(), true);
 
-            //read message sent to server
+            // read message sent to server
             JSONObject recvJSON = readObject(recv.nextLine());
 
-            //parse Message
+            // parse Message
             Message recvMessage = new Message(recvJSON);
 
-            //make sure message is expected type blender should only receive HELLO messages
-            if (!recvMessage.getType().equals("HELLO")) {
+            if (recvMessage.getType() == null) {
+                System.err.println("Blender ConnectionHandler: Bad type of message closing connection");
+                System.err.println("JSON message received: " + recvMessage.serialize());
+                return;
+            }
+
+            switch (recvMessage.getType()) {
+                case "HELLO":
+                    // Get jondo from hello message
+                    Node newNode = new Node(recvMessage.getSrcAddr(), recvMessage.getSrcPort());
+
+                    // add Jondo to blender's routing table and broadcast new node
+                    blender.addJondo(newNode);
+
+                    // create Response Message with routing table
+                    Message respondMessage = new Message.Builder("WELCOME").setWelcome(blender.getRoutingTable())
+                            .build();
+
+                    // Send message
+                    send.println(respondMessage.serialize());
+                    break;
+                case "VOTE_CAST":
+                    // Get vote from vote cast message
+                    handleVoteCast(recvMessage.getVote());
+                    break;
+                default:
+                    System.err.println("Blender ConnectionHandler: Bad type of message closing connection");
+                    System.err.println("JSON message received: " + recvMessage);
+                    return;
+            }
+            // make sure message is expected type blender should only receive HELLO messages and VOTE_CAST messages
+            if (!recvMessage.getType().equals("HELLO") && !recvMessage.getType().equals("VOTE_CAST")) {
                 System.err.println("Blender ConnectionHandler: Bad type of message closing connection");
                 System.err.println("JSON message received: " + recvMessage);
                 return;
             }
-
-            //Get jondo from hello message
-            Node newNode = new Node(recvMessage.getSrcAddr(),recvMessage.getSrcPort());
-
-            //add Jondo to blender's routing table and broadcast new node
-            blender.addJondo(newNode);
-
-            //create Response Message with routing table
-            Message respondMessage = new Message.Builder("WELCOME").setWelcome(blender.getRoutingTable()).build();
-
-            //Send message
-            send.println(respondMessage.serialize());
-
-            //close connection
+            // close connection
             sock.close();
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private void handleVoteCast(Vote vote) {
+        blender.tallyVote(vote.getVoteId(), vote.getSelection());
+        System.out.println("Vote for " + vote.getSelection() + " tallied for vote ID " + vote.getVoteId());
     }
 }
