@@ -32,13 +32,17 @@ import static merrimackutil.json.JsonIO.readObject;
 public class Jondo {
     private String addr;
     private int port;
+    private String blenderAddr;
+    private int blenderPort;
     private int threads;
     private ServerSocket server;
     private ConcurrentHashMap<String, Node> routingTable;
 
-    public Jondo(String _addr, int _port, int _threads, String blenderAddr, int blenderPort) {
+    public Jondo(String _addr, int _port, int _threads, String _blenderAddr, int _blenderPort) {
         addr = _addr;
         port = _port;
+        blenderAddr = _blenderAddr;
+        blenderPort = _blenderPort;
         threads = _threads;
 
         routingTable = new ConcurrentHashMap<>();
@@ -175,7 +179,7 @@ public class Jondo {
                     System.out.println("Connected to " + sock.getInetAddress() + ":" + sock.getPort());
 
                     //handle connections on new thread
-                    pool.execute(new JondoConnectionHandler(sock, routingTable, addr, port));
+                    pool.execute(new JondoConnectionHandler(sock, routingTable, addr, port, blenderAddr, blenderPort));
                 }
 
             } catch (IOException e) {

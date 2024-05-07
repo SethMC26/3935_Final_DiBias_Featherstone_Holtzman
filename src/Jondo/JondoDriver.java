@@ -13,6 +13,9 @@ import merrimackutil.cli.LongOption;
 import merrimackutil.util.Tuple;
 
 public class JondoDriver {
+    private static volatile boolean readyForInput = false;
+    private static final Object inputLock = new Object();
+
     private static void usage() {
         System.out.println(
                 "Usage: java JondoDriver --ip <Jondo IP> --port <Jondo Port> --threads <Threads> --blenderip <Blender IP> --blenderport <Blender Port>");
@@ -70,6 +73,10 @@ public class JondoDriver {
         runCLI(jondo);
     }
 
+    public static void setReadyForInput(boolean state) {
+        readyForInput = state;
+    }
+
     private static void runCLI(Jondo jondo) {
         Scanner scanner = new Scanner(System.in);
         String command;
@@ -78,6 +85,7 @@ public class JondoDriver {
         System.out.println("Type 'send' to send data, 'quit' to exit.");
 
         while (running) {
+
             System.out.print("> ");
             command = scanner.nextLine().trim();
 
@@ -111,6 +119,7 @@ public class JondoDriver {
                 default:
                     System.out.println("Unknown command.");
                     break;
+
             }
         }
         scanner.close();

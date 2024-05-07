@@ -30,6 +30,18 @@ public class Vote implements JSONSerializable {
         deserialize(jsonObject);
     }
 
+    public String getVoteId() {
+        return voteId;
+    }
+
+    public String getQuestion() {
+        return question;
+    }
+
+    public List<String> getOptions() {
+        return options;
+    }
+
     @Override
     public String serialize() {
         return this.toJSONType().getFormattedJSON();
@@ -42,7 +54,8 @@ public class Vote implements JSONSerializable {
 
         JSONObject jsonObject = (JSONObject) jsonType;
 
-        if (!jsonObject.containsKey("voteId") || !jsonObject.containsKey("question") || !jsonObject.containsKey("options"))
+        if (!jsonObject.containsKey("voteId") || !jsonObject.containsKey("question")
+                || !jsonObject.containsKey("options"))
             throw new InvalidObjectException("voteId, question, and options are required fields.");
 
         voteId = jsonObject.getString("voteId");
@@ -71,13 +84,16 @@ public class Vote implements JSONSerializable {
     @Override
     public JSONType toJSONType() {
         JSONObject json = new JSONObject();
-        JSONArray options = new JSONArray();
-        for (String option : this.options) {
-            options.add(option);
-        }
         json.put("voteId", voteId);
-        json.put("question", question);
-        json.put("options", options);
+        if (question != null)
+            json.put("question", question);
+        if (options != null) {
+            JSONArray options = new JSONArray();
+            for (String option : this.options) {
+                options.add(option);
+            }
+            json.put("options", options);
+        }
         if (selection != null)
             json.put("selection", selection);
         if (voterId != null)

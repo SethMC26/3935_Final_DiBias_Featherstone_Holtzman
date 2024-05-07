@@ -229,6 +229,11 @@ public class Message implements JSONSerializable {
                 messageJSON.put("vote",vote.toJSONType());
 
                 return messageJSON;
+            case "VOTE_CAST":
+                messageJSON.put("type",type);
+                messageJSON.put("vote",vote.toJSONType());
+
+                return messageJSON;
             case "ACK":
                 messageJSON.put("type",type);
                 messageJSON.put("srcAddr",srcAddr);
@@ -392,6 +397,13 @@ public class Message implements JSONSerializable {
         }
 
         public Builder setVoteBroadcast(Vote _vote) {
+            vote = _vote;
+            return this;
+        }
+
+        public Builder setVoteCast(String _dstAddr, int _dstPort, Vote _vote) {
+            dstAddr = _dstAddr;
+            dstPort = _dstPort;
             vote = _vote;
             return this;
         }

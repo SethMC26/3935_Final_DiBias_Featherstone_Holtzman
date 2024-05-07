@@ -38,6 +38,14 @@ public class JondoConnectionHandler implements Runnable {
      */
     private int port;
     /**
+     * Address of Blender
+     */
+    private String blenderAddr;
+    /**
+     * Port of Blender
+     */
+    private int blenderPort;
+    /**
      * Socket of incoming connection
      */
     private Socket sock;
@@ -62,9 +70,11 @@ public class JondoConnectionHandler implements Runnable {
      *                      UID and values being Node object
      */
     public JondoConnectionHandler(Socket _sock, ConcurrentHashMap<String, Node> _routingTable, String _addr,
-            int _port) {
+            int _port, String _blenderAddr, int _blenderPort) {
         addr = _addr;
         port = _port;
+        blenderAddr = _blenderAddr;
+        blenderPort = _blenderPort;
         sock = _sock;
 
         // get routing table from JONDO
@@ -141,9 +151,36 @@ public class JondoConnectionHandler implements Runnable {
     }
 
     private void handleVoteBroadcast(Message message) {
-        Vote vote = message.getVote();
-        // Process the vote, e.g., store it, tally it, etc.
-        System.out.println("Received vote for: " + vote.serialize());
+        Vote vote = message.getVote(); // Assuming getVote() method exists
+        System.out.println("New Vote Received: " + vote.getQuestion());
+        for (int i = 0; i < vote.getOptions().size(); i++) {
+            System.out.println((i + 1) + ". " + vote.getOptions().get(i));
+        }
+        System.out.print("Enter your choice (number): ");
+        Scanner scanner = new Scanner(System.in);
+        int choice = scanner.nextInt();
+        while (choice < 1 || choice > vote.getOptions().size()) {
+            System.out.println("Invalid choice. Please enter a number between 1 and " + vote.getOptions().size());
+            choice = scanner.nextInt();
+        }
+        String selectedOption = vote.getOptions().get(choice - 1);
+
+        sendVoteCast(vote.getVoteId(), selectedOption);
+    }
+
+    private void sendVoteCast(String voteId, String selection) {
+        Vote vote = new Vote.Builder(voteId, null, null) // Assuming nulls are handled in Builder
+                .setSelection(selection)
+                .build();
+        Message voteCastMessage = new Message.Builder("VOTE_CAST")
+                .setVoteCast(blenderAddr, blenderPort, vote)
+                .build();
+        try {
+            forwardMessageToDestination(voteCastMessage);
+        } catch (IOException e) {
+            System.err.println("Error sending vote cast message");
+            e.printStackTrace();
+        }
     }
 
     private void forwardMessageToRandomNode(Message message) throws IOException {
