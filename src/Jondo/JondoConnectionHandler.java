@@ -101,6 +101,9 @@ public class JondoConnectionHandler implements Runnable {
                 case "DATA":
                     handleData(recvMessage, send);
                     break;
+                case "VOTE_BROADCAST":
+                    handleVoteBroadcast(recvMessage);
+                    break;
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -136,8 +139,14 @@ public class JondoConnectionHandler implements Runnable {
         send.println(ackMessage.serialize());
     }
 
+    private void handleVoteBroadcast(Message message) {
+        String vote = message.getVote();
+        // Process the vote, e.g., store it, tally it, etc.
+        System.out.println("Received vote for: " + vote);
+    }
+
     private void forwardMessageToRandomNode(Message message) throws IOException {
-        Node randNode = selectRandomNodeExcludingSender(message.getSrcAddr(), message.getSrcPort());
+        Node randNode = selectRandomNode(message.getSrcAddr(), message.getSrcPort());
         if (randNode != null) {
             try (Socket nodeSock = new Socket(randNode.getAddr(), randNode.getPort());
                     PrintWriter nodeSend = new PrintWriter(nodeSock.getOutputStream(), true)) {
@@ -159,12 +168,8 @@ public class JondoConnectionHandler implements Runnable {
         return this.addr.equals(message.getDstAddr()) && this.port == message.getDstPort();
     }
 
-    private Node selectRandomNodeExcludingSender(String srcAddr, int srcPort) {
+    private Node selectRandomNode(String srcAddr, int srcPort) {
         ArrayList<String> keys = new ArrayList<>(routingTable.keySet());
-        keys.removeIf(key -> {
-            Node node = routingTable.get(key);
-            return node.getAddr().equals(srcAddr) && node.getPort() == srcPort;
-        });
 
         if (keys.isEmpty()) {
             return null; // No available nodes to forward to

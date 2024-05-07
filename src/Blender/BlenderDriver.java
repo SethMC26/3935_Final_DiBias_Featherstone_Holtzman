@@ -3,6 +3,7 @@ package Blender;
 import merrimackutil.cli.OptionParser;
 import merrimackutil.cli.LongOption;
 import merrimackutil.util.Tuple;
+import java.util.Scanner;
 
 public class BlenderDriver {
     private static void usage() {
@@ -48,5 +49,35 @@ public class BlenderDriver {
         }
 
         Blender blender = new Blender(blenderAddr, blenderPort, threads);
+        runCLI(blender);
+    }
+
+    private static void runCLI(Blender blender) {
+        Scanner scanner = new Scanner(System.in);
+        String command;
+        boolean running = true;
+
+        System.out.println("Type 'vote' to create and broadcast a vote, 'quit' to exit.");
+
+        while (running) {
+            System.out.print("> ");
+            command = scanner.nextLine().trim();
+
+            switch (command.toLowerCase()) {
+                case "vote":
+                    System.out.print("Enter vote details: ");
+                    String voteDetails = scanner.nextLine().trim();
+                    blender.broadcastVote(voteDetails);
+                    System.out.println("Vote broadcasted: " + voteDetails);
+                    break;
+                case "quit":
+                    running = false;
+                    break;
+                default:
+                    System.out.println("Unknown command.");
+                    break;
+            }
+        }
+        scanner.close();
     }
 }

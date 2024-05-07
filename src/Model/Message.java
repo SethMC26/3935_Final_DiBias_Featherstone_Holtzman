@@ -50,6 +50,10 @@ public class Message implements JSONSerializable {
      * Destination Data
      */
     private String data; //might change later to a different type
+    /**
+     * Vote to broadcast
+     */
+    private String vote;
 
     /**
      * New node to add to routing table
@@ -70,6 +74,7 @@ public class Message implements JSONSerializable {
         dstAddr = builder.dstAddr;
         dstPort = builder.dstPort;
         data = builder.data;
+        vote = builder.vote;
     }
 
     /**
@@ -159,6 +164,13 @@ public class Message implements JSONSerializable {
                 dstPort = messageJSON.getInt("dstPort");
                 data = messageJSON.getString("data");
                 break;
+            case "VOTE_BROADCAST":
+                if (!messageJSON.containsKey("vote")) {
+                    throw new InvalidObjectException("VOTE_BROADCAST message should contain vote");
+                }
+
+                vote = messageJSON.getString("vote");
+                break;
             case "ACK":
                 if (!(messageJSON.containsKey("srcAddr") && messageJSON.containsKey("srcPort"))) {
                     throw new InvalidObjectException("ACK message should contain srcAddr and srcPort");
@@ -210,6 +222,11 @@ public class Message implements JSONSerializable {
                 messageJSON.put("dstAddr",dstAddr);
                 messageJSON.put("dstPort",dstPort);
                 messageJSON.put("data",data);
+
+                return messageJSON;
+            case "VOTE_BROADCAST":
+                messageJSON.put("type",type);
+                messageJSON.put("vote",vote);
 
                 return messageJSON;
             case "ACK":
@@ -282,6 +299,11 @@ public class Message implements JSONSerializable {
         return data;
     }
 
+
+    public String getVote() {
+        return vote;
+    }
+
     /**
      *  Gets routingTable from welcome message
      * @return ConcurrentHashMap of routing table with keys being node UID and values being nodes
@@ -301,6 +323,7 @@ public class Message implements JSONSerializable {
         private String dstAddr;
         private int dstPort;
         private String data; //might change later to a different type
+        private String vote;
         private Node newNode;
 
         /**
@@ -365,6 +388,11 @@ public class Message implements JSONSerializable {
         public Builder setAck(String _srcAddr, int _srcPort) {
             srcAddr = _srcAddr;
             srcPort = _srcPort;
+            return this;
+        }
+
+        public Builder setVoteBroadcast(String _vote) {
+            vote = _vote;
             return this;
         }
 
