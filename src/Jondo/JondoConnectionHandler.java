@@ -11,6 +11,7 @@ package Jondo;
 
 import Model.Message;
 import Model.Node;
+import Model.Vote;
 import merrimackutil.json.types.JSONObject;
 
 import java.io.IOException;
@@ -140,9 +141,9 @@ public class JondoConnectionHandler implements Runnable {
     }
 
     private void handleVoteBroadcast(Message message) {
-        String vote = message.getVote();
+        Vote vote = message.getVote();
         // Process the vote, e.g., store it, tally it, etc.
-        System.out.println("Received vote for: " + vote);
+        System.out.println("Received vote for: " + vote.serialize());
     }
 
     private void forwardMessageToRandomNode(Message message) throws IOException {

@@ -3,7 +3,11 @@ package Blender;
 import merrimackutil.cli.OptionParser;
 import merrimackutil.cli.LongOption;
 import merrimackutil.util.Tuple;
+
+import java.util.Arrays;
 import java.util.Scanner;
+
+import Model.Vote;
 
 public class BlenderDriver {
     private static void usage() {
@@ -65,10 +69,15 @@ public class BlenderDriver {
 
             switch (command.toLowerCase()) {
                 case "vote":
-                    System.out.print("Enter vote details: ");
+                    System.out.print("Enter vote description: ");
                     String voteDetails = scanner.nextLine().trim();
-                    blender.broadcastVote(voteDetails);
-                    System.out.println("Vote broadcasted: " + voteDetails);
+                    System.out.print("Enter vote options (comma separated): ");
+                    String voteOptions = scanner.nextLine().trim();
+                    String[] voteOptionsArray = voteOptions.split(",");
+                    System.out.println(voteOptionsArray);
+                    Vote vote = new Vote.Builder("PLACEHOLDERID", voteDetails, Arrays.asList(voteOptionsArray)).build();
+                    blender.broadcastVote(vote);
+                    System.out.println("Vote broadcasted: " + vote.serialize());
                     break;
                 case "quit":
                     running = false;

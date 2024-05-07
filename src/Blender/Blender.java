@@ -10,6 +10,7 @@
 package Blender;
 
 import Model.Node;
+import Model.Vote;
 import Model.Message;
 
 import java.io.IOException;
@@ -47,7 +48,6 @@ public class Blender {
      * modify it at once
      */
     private ConcurrentHashMap<String, Node> routingTable;
-
     /**
      * Pool of threads to handle connections
      */
@@ -128,7 +128,12 @@ public class Blender {
         }
     }
 
-    public void broadcastVote(String vote) {
+    /**
+     * Broadcasts a vote to all Jondos in the routing table
+     * 
+     * @param vote String vote to broadcast
+     */
+    public void broadcastVote(Vote vote) {
         Message voteMessage = new Message.Builder("VOTE_BROADCAST").setVoteBroadcast(vote).build();
 
         for (Node node : routingTable.values()) {
@@ -152,6 +157,10 @@ public class Blender {
         return routingTable;
     }
 
+    /**
+     * Starts the server to listen for connections and handle them on a
+     * separate thread
+     */
     private void startServer() {
         // create a single thread to listen for connections
         ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -160,7 +169,8 @@ public class Blender {
                 while (!Thread.currentThread().isInterrupted()) {
                     Socket clientSocket = serverSocket.accept();
 
-                    System.out.println("Connected to " + clientSocket.getInetAddress() + ":" + clientSocket.getPort() + "\n");
+                    System.out.println(
+                            "Connected to " + clientSocket.getInetAddress() + ":" + clientSocket.getPort() + "\n");
 
                     // deal with connection on new thread from the Connection Handler Pool
                     pool.execute(new BlenderConnectionHandler(this, clientSocket));

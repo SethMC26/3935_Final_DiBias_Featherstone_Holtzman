@@ -53,7 +53,7 @@ public class Message implements JSONSerializable {
     /**
      * Vote to broadcast
      */
-    private String vote;
+    private Vote vote;
 
     /**
      * New node to add to routing table
@@ -169,7 +169,7 @@ public class Message implements JSONSerializable {
                     throw new InvalidObjectException("VOTE_BROADCAST message should contain vote");
                 }
 
-                vote = messageJSON.getString("vote");
+                vote = new Vote(messageJSON.getObject("vote"));
                 break;
             case "ACK":
                 if (!(messageJSON.containsKey("srcAddr") && messageJSON.containsKey("srcPort"))) {
@@ -226,7 +226,7 @@ public class Message implements JSONSerializable {
                 return messageJSON;
             case "VOTE_BROADCAST":
                 messageJSON.put("type",type);
-                messageJSON.put("vote",vote);
+                messageJSON.put("vote",vote.toJSONType());
 
                 return messageJSON;
             case "ACK":
@@ -236,7 +236,7 @@ public class Message implements JSONSerializable {
 
                 return messageJSON;
             default:
-                throw new IllegalArgumentException("Bad type - Must be HELLO, WELCOME, BROADCAST, DATA, ACK");
+                throw new IllegalArgumentException("Bad type - Must be HELLO, WELCOME, BROADCAST, DATA, VOTE_BROADCAST, ACK");
         }
     }
 
@@ -300,7 +300,7 @@ public class Message implements JSONSerializable {
     }
 
 
-    public String getVote() {
+    public Vote getVote() {
         return vote;
     }
 
@@ -323,7 +323,7 @@ public class Message implements JSONSerializable {
         private String dstAddr;
         private int dstPort;
         private String data; //might change later to a different type
-        private String vote;
+        private Vote vote;
         private Node newNode;
 
         /**
@@ -391,7 +391,7 @@ public class Message implements JSONSerializable {
             return this;
         }
 
-        public Builder setVoteBroadcast(String _vote) {
+        public Builder setVoteBroadcast(Vote _vote) {
             vote = _vote;
             return this;
         }
