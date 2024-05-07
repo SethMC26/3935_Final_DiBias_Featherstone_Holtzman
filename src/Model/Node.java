@@ -42,15 +42,32 @@ public class Node implements JSONSerializable {
         createUID();
     }
 
+    /**
+     * Constructs a Node by deserializing a JSON object.
+     *
+     * @param jondoJSON the JSON object containing the node's data
+     * @throws InvalidObjectException if the JSON object does not contain necessary fields
+     */
     public Node(JSONObject jondoJSON) throws InvalidObjectException {
         deserialize(jondoJSON);
     }
 
+    /**
+     * Serializes this node into a JSON string.
+     *
+     * @return a JSON string representation of this node
+     */
     @Override
     public String serialize() {
         return toJSONType().toJSON();
     }
 
+    /**
+     * Deserializes a JSONType object into a Node object, ensuring it contains the necessary fields.
+     *
+     * @param jsonType the JSONType to deserialize
+     * @throws InvalidObjectException if the provided JSONType is not a JSONObject or lacks necessary fields
+     */
     @Override
     public void deserialize(JSONType jsonType) throws InvalidObjectException {
         if (!(jsonType instanceof JSONObject))

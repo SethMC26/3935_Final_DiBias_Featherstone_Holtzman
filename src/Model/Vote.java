@@ -8,6 +8,10 @@ import merrimackutil.json.types.JSONArray;
 import merrimackutil.json.types.JSONObject;
 import merrimackutil.json.types.JSONType;
 
+/**
+ * Represents a voting object that can be serialized and deserialized.
+ * This class includes functionality to handle the voting process in a distributed system,
+ */
 public class Vote implements JSONSerializable {
     private String voteId;
     private String question;
@@ -16,6 +20,11 @@ public class Vote implements JSONSerializable {
     private String voterId;
     private String timestamp;
 
+    /**
+     * Constructs a Vote object using the provided builder.
+     *
+     * @param builder the Builder instance containing the properties for the Vote object.
+     */
     private Vote(Builder builder) {
         this.voteId = builder.voteId;
         this.question = builder.question;
@@ -25,32 +34,68 @@ public class Vote implements JSONSerializable {
         this.timestamp = builder.timestamp;
     }
 
+    /**
+     * Constructs a Vote object using the provided builder.
+     *
+     * @param builder the Builder instance containing the properties for the Vote object.
+     */
     public Vote(JSONObject jsonObject) throws InvalidObjectException {
         System.out.println("JSON OBJECT: " + jsonObject.getFormattedJSON());
         deserialize(jsonObject);
     }
 
+    /**
+     * Returns the vote ID.
+     *
+     * @return the vote ID as a String.
+     */
     public String getVoteId() {
         return voteId;
     }
 
+    /**
+     * Returns the question associated with this vote.
+     *
+     * @return the question as a String.
+     */
     public String getQuestion() {
         return question;
     }
 
+    /**
+     * Returns the list of options for this vote.
+     *
+     * @return a list of strings representing the options.
+     */
     public List<String> getOptions() {
         return options;
     }
 
+    /**
+     * Returns the selected option in this vote.
+     *
+     * @return the selected option as a String.
+     */
     public String getSelection() {
         return selection;
     }
 
+    /**
+     * Serializes this Vote object into a JSON string.
+     *
+     * @return a JSON string representation of this Vote.
+     */
     @Override
     public String serialize() {
         return this.toJSONType().getFormattedJSON();
     }
 
+    /**
+     * Deserializes a JSONType object into a Vote object, ensuring it contains the necessary fields.
+     *
+     * @param jsonType the JSONType to deserialize.
+     * @throws InvalidObjectException if the provided JSONType is not a JSONObject or lacks necessary fields.
+     */
     @Override
     public void deserialize(JSONType jsonType) throws InvalidObjectException {
         if (!(jsonType instanceof JSONObject))
@@ -84,6 +129,11 @@ public class Vote implements JSONSerializable {
         }
     }
 
+    /**
+     * Converts this Vote into a JSONObject.
+     *
+     * @return a JSONObject representing this Vote.
+     */
     @Override
     public JSONType toJSONType() {
         JSONObject json = new JSONObject();
@@ -106,6 +156,9 @@ public class Vote implements JSONSerializable {
         return json;
     }
 
+    /**
+     * Builder class for creating Vote instances.
+     */
     public static class Builder {
         private String voteId;
         private String question;
@@ -143,6 +196,11 @@ public class Vote implements JSONSerializable {
             return this;
         }
 
+        /**
+         * Builds and returns the Vote object.
+         *
+         * @return the constructed Vote instance.
+         */
         public Vote build() {
             return new Vote(this);
         }

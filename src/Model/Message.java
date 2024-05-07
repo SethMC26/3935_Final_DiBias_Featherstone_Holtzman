@@ -18,7 +18,8 @@ import java.io.InvalidObjectException;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * JSON messages sent between nodes
+ * The Message class handles the creation, serialization, and deserialization of messages exchanged between nodes
+ * in a decentralized network. It supports various types of messages.
  */
 public class Message implements JSONSerializable {
     /**
@@ -61,9 +62,9 @@ public class Message implements JSONSerializable {
     private Node newNode;
 
     /**
-     * Creates Model.Message Object from Builder
+     * Constructs a Message object using the provided Builder instance.
      *
-     * @param builder builder to create
+     * @param builder The Builder object containing initialization data for the Message.
      */
     private Message(Builder builder) {
         type = builder.type;
@@ -91,7 +92,7 @@ public class Message implements JSONSerializable {
     /**
      * Serializes the JSON object into JSON string representation
      *
-     * @return JSON String
+     * @return A JSON string representation of the Message.
      */
     @Override
     public String serialize() {
@@ -112,6 +113,7 @@ public class Message implements JSONSerializable {
 
         JSONObject messageJSON = (JSONObject) jsonType;
 
+        // Ensures that the type field is present
         if (!messageJSON.containsKey("type")) {
             throw new InvalidObjectException("Model.Message json does not have TYPE field");
         }
@@ -198,7 +200,7 @@ public class Message implements JSONSerializable {
     }
 
     /**
-     * Creates JSONObject based on type of message
+     * Converts the Message object into a JSONObject based on the message type and content.
      *
      * @return JSONObject of message
      */
