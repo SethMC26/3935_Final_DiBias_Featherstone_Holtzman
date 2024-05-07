@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import static merrimackutil.json.JsonIO.readObject;
 
 /**
- * Handle the incoming connections for each Jondo
+ * Handles incoming connections for each Jondo, processing messages and managing routing operations.
  */
 public class JondoConnectionHandler implements Runnable {
     /**
@@ -67,11 +67,15 @@ public class JondoConnectionHandler implements Runnable {
     private JondoDriver jondoDriver;
 
     /**
-     * Creates new Connection hander
-     * 
-     * @param _sock         Socket we received connection on
-     * @param _routingTable Routing Table ConcurrentHashMap with keys being string
-     *                      UID and values being Node object
+     * Constructs a new connection handler for a Jondo.
+     *
+     * @param _sock         The socket through which the connection was received.
+     * @param _routingTable The current routing table of the Jondo.
+     * @param _addr         The IP address of this Jondo.
+     * @param _port         The port number of this Jondo.
+     * @param _blenderAddr  The IP address of the Blender.
+     * @param _blenderPort  The port number of the Blender.
+     * @param _jondoDriver  The driver for managing Jondo operations.
      */
     public JondoConnectionHandler(Socket _sock, ConcurrentHashMap<String, Node> _routingTable, String _addr,
             int _port, String _blenderAddr, int _blenderPort, JondoDriver _jondoDriver) {
@@ -91,7 +95,7 @@ public class JondoConnectionHandler implements Runnable {
     }
 
     /**
-     * Run method handles connection new thread
+     * The run method processes incoming messages received through the socket.
      */
     @Override
     public void run() {
@@ -129,6 +133,11 @@ public class JondoConnectionHandler implements Runnable {
         }
     }
 
+    /**
+     * Handles the BROADCAST message type to update the routing table.
+     *
+     * @param recvMessage The received broadcast message.
+     */
     private void handleBroadcast(Message recvMessage) {
         // get new Jondo to add from message and add it to routing table
         Node newJondo = recvMessage.getNewNode();
@@ -143,6 +152,13 @@ public class JondoConnectionHandler implements Runnable {
         }
     }
 
+    /**
+     * Handles the DATA message type, determining whether to process or forward the message.
+     *
+     * @param recvMessage The received data message.
+     * @param send        The PrintWriter to send responses.
+     * @throws IOException if there is an error sending the response.
+     */
     private void handleData(Message recvMessage, PrintWriter send) throws IOException {
         if (thisNodeIsDestination(recvMessage)) {
             processMessage(recvMessage);
@@ -158,6 +174,11 @@ public class JondoConnectionHandler implements Runnable {
         send.println(ackMessage.serialize());
     }
 
+    /**
+     * Handles VOTE_CAST messages by determining whether to forward the message based on a probabilistic decision.
+     *
+     * @param recvMessage The received vote cast message.
+     */
     private void handleVoteCast(Message recvMessage) {
         // If we recieve another nodes vote cast message, we need to flip a coin and
         // forward it to the Blender
@@ -172,6 +193,11 @@ public class JondoConnectionHandler implements Runnable {
         }
     }
 
+    /**
+     * Handles VOTE_BROADCAST messages by updating the current vote in the JondoDriver.
+     *
+     * @param message The received vote broadcast message.
+     */
     public void handleVoteBroadcast(Message message) {
         Vote vote = message.getVote(); // Assuming getVote() method exists
         jondoDriver.setCurrentVote(vote);
@@ -182,6 +208,12 @@ public class JondoConnectionHandler implements Runnable {
         System.out.println("Please cast your vote by using the command '.vote'");
     }
 
+    /**
+     * Forwards a message directly to its destination.
+     *
+     * @param message The message to forward.
+     * @throws IOException if there is an error during forwarding.
+     */
     private void forwardMessageToDestination(Message message) throws IOException {
         try (Socket nodeSock = new Socket(message.getDstAddr(), message.getDstPort());
                 PrintWriter nodeSend = new PrintWriter(nodeSock.getOutputStream(), true)) {
@@ -190,6 +222,12 @@ public class JondoConnectionHandler implements Runnable {
         }
     }
 
+    /**
+     * Forwards a message to a randomly selected node in the routing table.
+     *
+     * @param message The message to forward.
+     * @throws IOException if there is an error during forwarding.
+     */
     private void forwardMessageToRandomNode(Message message) throws IOException {
         Node randNode = selectRandomNode(message.getSrcAddr(), message.getSrcPort());
         if (randNode != null) {
@@ -201,10 +239,22 @@ public class JondoConnectionHandler implements Runnable {
         }
     }
 
+    /**
+     * Determines if this node is the destination for a received message.
+     * This method checks if the destination address and port in the message match this node's address and port.
+     *
+     * @param message The message to check.
+     * @return true if this node is the destination; false otherwise.
+     */
     private boolean thisNodeIsDestination(Message message) {
         return this.addr.equals(message.getDstAddr()) && this.port == message.getDstPort();
     }
 
+    /**
+     * Selects a random node from the routing table.
+     *
+     * @return The randomly selected Node, or null if no nodes are available.
+     */
     private Node selectRandomNode(String srcAddr, int srcPort) {
         ArrayList<String> keys = new ArrayList<>(routingTable.keySet());
 
@@ -230,6 +280,11 @@ public class JondoConnectionHandler implements Runnable {
         return ranNum <= probHead;
     }
 
+    /**
+     * Processes the received message
+     *
+     * @param message The message to process.
+     */
     private void processMessage(Message message) {
         // process message
         System.out.println("Processing message: " + message);

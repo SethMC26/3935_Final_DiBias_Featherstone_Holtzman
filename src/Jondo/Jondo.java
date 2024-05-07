@@ -43,6 +43,16 @@ public class Jondo {
     private JondoDriver jondoDriver;
     private Random randGen;
 
+    /**
+     * Constructor for creating a new Jondo node.
+     *
+     * @param _addr        IP address of this node.
+     * @param _port        Port number this node will listen on.
+     * @param _threads     Number of threads for handling concurrent connections.
+     * @param _blenderAddr IP address of the Blender node for joining the network.
+     * @param _blenderPort Port number of the Blender node.
+     * @param _jondoDriver Driver class for handling Jondo operations.
+     */
     public Jondo(String _addr, int _port, int _threads, String _blenderAddr, int _blenderPort,
             JondoDriver _jondoDriver) {
         addr = _addr;
@@ -166,6 +176,12 @@ public class Jondo {
         }
     }
 
+    /**
+     * Forwards a vote message to a randomly selected node in the routing table.
+     *
+     * @param voteId    The unique identifier of the vote.
+     * @param selection The selected option of the vote.
+     */
     protected void sendVoteCast(String voteId, String selection) {
         Vote vote = new Vote.Builder(voteId)
                 .setSelection(selection)
@@ -181,6 +197,12 @@ public class Jondo {
         }
     }
 
+    /**
+     * Forwards a message to a random node in the routing table.
+     *
+     * @param message The message to forward.
+     * @throws IOException If an error occurs during socket communication.
+     */
     private void forwardMessageToRandomNode(Message message) throws IOException {
         Node randNode = selectRandomNode(message.getSrcAddr(), message.getSrcPort());
         if (randNode != null) {
@@ -192,6 +214,11 @@ public class Jondo {
         }
     }
 
+    /**
+     * Selects a random node from the routing table.
+     *
+     * @return A randomly selected Node, or null if the routing table is empty.
+     */
     private Node selectRandomNode(String srcAddr, int srcPort) {
         ArrayList<String> keys = new ArrayList<>(routingTable.keySet());
 
@@ -234,7 +261,5 @@ public class Jondo {
                 throw new RuntimeException(e);
             }
         }
-
     }
-
 }
