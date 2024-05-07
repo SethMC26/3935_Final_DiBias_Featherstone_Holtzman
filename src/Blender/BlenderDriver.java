@@ -4,7 +4,12 @@ import merrimackutil.cli.OptionParser;
 import merrimackutil.cli.LongOption;
 import merrimackutil.util.Tuple;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Base64;
+import java.util.List;
 import java.util.Scanner;
 
 import Model.Vote;
@@ -18,9 +23,9 @@ public class BlenderDriver {
     public static void main(String[] args) {
         OptionParser parser = new OptionParser(args);
         LongOption[] opts = {
-            new LongOption("ip", true, 'i'),
-            new LongOption("port", true, 'p'),
-            new LongOption("threads", true, 't')
+                new LongOption("ip", true, 'i'),
+                new LongOption("port", true, 'p'),
+                new LongOption("threads", true, 't')
         };
         parser.setLongOpts(opts);
         parser.setOptString("i:p:t:");
@@ -73,11 +78,11 @@ public class BlenderDriver {
                     String voteDetails = scanner.nextLine().trim();
                     System.out.print("Enter vote options (comma separated): ");
                     String voteOptions = scanner.nextLine().trim();
-                    String[] voteOptionsArray = voteOptions.split(",");
-                    System.out.println(voteOptionsArray);
-                    Vote vote = new Vote.Builder("PLACEHOLDERID")
+                    List<String> voteOptionsList = Arrays.asList(voteOptions.split(","));
+                    String voteId = generateVoteId(voteDetails, voteOptionsList);
+                    Vote vote = new Vote.Builder(voteId)
                             .setQuestion(voteDetails)
-                            .setOptions(Arrays.asList(voteOptionsArray))
+                            .setOptions(voteOptionsList)
                             .build();
                     blender.broadcastVote(vote);
                     System.out.println("Vote broadcasted: " + vote.serialize());
@@ -91,5 +96,16 @@ public class BlenderDriver {
             }
         }
         scanner.close();
+    }
+
+    private static String generateVoteId(String question, List<String> options) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            String combined = question + String.join("", options);
+            byte[] hash = digest.digest(combined.getBytes(StandardCharsets.UTF_8));
+            return Base64.getEncoder().encodeToString(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 algorithm not found", e);
+        }
     }
 }

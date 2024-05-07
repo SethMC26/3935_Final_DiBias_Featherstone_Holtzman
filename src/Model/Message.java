@@ -185,6 +185,31 @@ public class Message implements JSONSerializable {
                 dstPort = messageJSON.getInt("dstPort");
                 vote = new Vote(messageJSON.getObject("vote"));
                 break;
+            case "VOTE_RESULTS_QUERY":
+                if (!(messageJSON.containsKey("dstAddr") && messageJSON.containsKey("dstPort")
+                        && messageJSON.containsKey("vote") && messageJSON.containsKey("srcAddr")
+                        && messageJSON.containsKey("srcPort"))) {
+                    throw new InvalidObjectException(
+                            "VOTE_RESULTS_QUERY message should contain dstAddr, dstPort, vote, srcAddr, and srcPort");
+                }
+
+                dstAddr = messageJSON.getString("dstAddr");
+                dstPort = messageJSON.getInt("dstPort");
+                srcAddr = messageJSON.getString("srcAddr");
+                srcPort = messageJSON.getInt("srcPort");
+                vote = new Vote(messageJSON.getObject("vote"));
+                break;
+            case "VOTE_RESULTS":
+                if (!(messageJSON.containsKey("vote") && messageJSON.containsKey("dstAddr") && messageJSON.containsKey("dstPort") && messageJSON.containsKey("srcAddr") && messageJSON.containsKey("srcPort"))) {
+                    throw new InvalidObjectException("VOTE_RESULTS message should contain vote, dstAddr, dstPort, srcAddr, and srcPort");
+                }
+
+                vote = new Vote(messageJSON.getObject("vote"));
+                dstAddr = messageJSON.getString("dstAddr");
+                dstPort = messageJSON.getInt("dstPort");
+                srcAddr = messageJSON.getString("srcAddr");
+                srcPort = messageJSON.getInt("srcPort");
+                break;
             case "ACK":
                 if (!(messageJSON.containsKey("srcAddr") && messageJSON.containsKey("srcPort"))) {
                     throw new InvalidObjectException("ACK message should contain srcAddr and srcPort");
@@ -250,6 +275,23 @@ public class Message implements JSONSerializable {
                 messageJSON.put("dstAddr", dstAddr);
                 messageJSON.put("dstPort", dstPort);
 
+                return messageJSON;
+            case "VOTE_RESULTS_QUERY":
+                messageJSON.put("type", type);
+                messageJSON.put("vote", vote.toJSONType());
+                messageJSON.put("dstAddr", dstAddr);
+                messageJSON.put("dstPort", dstPort);
+                messageJSON.put("srcAddr", srcAddr);
+                messageJSON.put("srcPort", srcPort);
+
+                return messageJSON;
+            case "VOTE_RESULTS":
+                messageJSON.put("type", type);
+                messageJSON.put("vote", vote.toJSONType());
+                messageJSON.put("dstAddr", dstAddr);
+                messageJSON.put("dstPort", dstPort);
+                messageJSON.put("srcAddr", srcAddr);
+                messageJSON.put("srcPort", srcPort);
                 return messageJSON;
             case "ACK":
                 messageJSON.put("type", type);
@@ -436,6 +478,24 @@ public class Message implements JSONSerializable {
             dstAddr = _dstAddr;
             dstPort = _dstPort;
             vote = _vote;
+            return this;
+        }
+
+        public Builder setVoteResultsQuery(String _dstAddr, int _dstPort, Vote _vote, String _srcAddr, int _srcPort) {
+            srcAddr = _srcAddr;
+            srcPort = _srcPort;
+            dstAddr = _dstAddr;
+            dstPort = _dstPort;
+            vote = _vote;
+            return this;
+        }
+
+        public Builder setVoteResults(Vote _vote, String _dstAddr, int _dstPort, String _srcAddr, int _srcPort) {
+            vote = _vote;
+            dstAddr = _dstAddr;
+            dstPort = _dstPort;
+            srcAddr = _srcAddr;
+            srcPort = _srcPort;
             return this;
         }
 

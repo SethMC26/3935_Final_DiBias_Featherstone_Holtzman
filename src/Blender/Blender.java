@@ -18,7 +18,10 @@ import java.io.PrintWriter;
 import java.net.ConnectException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -81,6 +84,14 @@ public class Blender {
         startServer();
     }
 
+    public String getAddress() {
+        return addr;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
     /**
      * Adds a new Jondo to Blenders Routing Table and broadcasts new table to crowd
      * 
@@ -137,7 +148,7 @@ public class Blender {
     public synchronized void tallyVote(String voteId, String option) {
         voteTallies.computeIfAbsent(voteId, k -> new HashMap<>()).merge(option, 1, Integer::sum);
     }
-    
+
     public synchronized HashMap<String, Integer> getVoteResults(String voteId) {
         return voteTallies.getOrDefault(voteId, new HashMap<>());
     }
@@ -160,6 +171,17 @@ public class Blender {
                 e.printStackTrace();
             }
         }
+    }
+
+    public List<String> formatVoteResults(String voteId) {
+        List<String> formattedResults = new ArrayList<>();
+        HashMap<String, Integer> results = voteTallies.get(voteId);
+        if (results != null) {
+            for (Entry<String, Integer> entry : results.entrySet()) {
+                formattedResults.add(entry.getKey() + ": " + entry.getValue());
+            }
+        }
+        return formattedResults;
     }
 
     /**

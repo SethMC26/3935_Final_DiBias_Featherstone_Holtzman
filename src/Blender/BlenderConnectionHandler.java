@@ -15,11 +15,10 @@ import Model.Vote;
 import merrimackutil.json.types.JSONObject;
 import static merrimackutil.json.JsonIO.readObject;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.HashMap;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.List;
 import java.util.Scanner;
 
 /**
@@ -86,13 +85,21 @@ public class BlenderConnectionHandler implements Runnable {
                     // Get vote from vote cast message
                     handleVoteCast(recvMessage.getVote());
                     break;
+                case "VOTE_RESULTS_QUERY":
+                    // Get vote from vote results query message
+                    String srcAddr = recvMessage.getSrcAddr();
+                    int srcPort = recvMessage.getSrcPort();
+                    handleVoteResultsQuery(recvMessage.getVote(), srcAddr, srcPort);
+                    break;
                 default:
                     System.err.println("Blender ConnectionHandler: Bad type of message closing connection");
                     System.err.println("JSON message received: " + recvMessage);
                     return;
             }
-            // make sure message is expected type blender should only receive HELLO messages and VOTE_CAST messages
-            if (!recvMessage.getType().equals("HELLO") && !recvMessage.getType().equals("VOTE_CAST")) {
+            // make sure message is expected type blender should only receive HELLO messages
+            // and VOTE_CAST messages
+            if (!recvMessage.getType().equals("HELLO") && !recvMessage.getType().equals("VOTE_CAST")
+                    && !recvMessage.getType().equals("VOTE_RESULTS_QUERY")) {
                 System.err.println("Blender ConnectionHandler: Bad type of message closing connection");
                 System.err.println("JSON message received: " + recvMessage);
                 return;
@@ -107,5 +114,23 @@ public class BlenderConnectionHandler implements Runnable {
     private void handleVoteCast(Vote vote) {
         blender.tallyVote(vote.getVoteId(), vote.getSelection());
         System.out.println("Vote for " + vote.getSelection() + " tallied for vote ID " + vote.getVoteId());
+    }
+
+    private void handleVoteResultsQuery(Vote vote, String srcAddr, int srcPort) {
+        System.out.println("Vote results query received for vote ID " + vote.getVoteId() + " from " + srcAddr + ":" + srcPort);
+        List<String> voteResults = blender.formatVoteResults(vote.getVoteId());
+
+        Vote resultVote = new Vote.Builder(vote.getVoteId()).setResults(voteResults).build();
+        Message respondMessage = new Message.Builder("VOTE_RESULTS")
+                .setVoteResults(resultVote, srcAddr, srcPort, blender.getAddress(), blender.getPort()).build();
+        try {
+            Socket sock = new Socket(srcAddr, srcPort);
+            PrintWriter send = new PrintWriter(sock.getOutputStream(), true);
+            send.println(respondMessage.serialize());
+            sock.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        System.out.println("Vote results sent to " + srcAddr + ":" + srcPort);
     }
 }

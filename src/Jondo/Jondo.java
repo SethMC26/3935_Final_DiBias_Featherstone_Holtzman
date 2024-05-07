@@ -214,6 +214,27 @@ public class Jondo {
         }
     }
 
+    protected void forwardMessageToDestination(Message message) throws IOException {
+        try (Socket nodeSock = new Socket(message.getDstAddr(), message.getDstPort());
+                PrintWriter nodeSend = new PrintWriter(nodeSock.getOutputStream(), true)) {
+            nodeSend.println(message.serialize());
+            System.out.println("Sent directly to destination: " + message.getDstAddr());
+        }
+    }
+
+    /**
+     * Selects a random node from the routing table.
+     *
+     * @return A randomly selected Node, or null if the routing table is empty.
+     */
+    protected void forwardMessageToDestination(Message message) throws IOException {
+        try (Socket nodeSock = new Socket(message.getDstAddr(), message.getDstPort());
+                PrintWriter nodeSend = new PrintWriter(nodeSock.getOutputStream(), true)) {
+            nodeSend.println(message.serialize());
+            System.out.println("Sent directly to destination: " + message.getDstAddr());
+        }
+    }
+
     /**
      * Selects a random node from the routing table.
      *

@@ -19,6 +19,7 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
@@ -111,6 +112,7 @@ public class JondoConnectionHandler implements Runnable {
 
             // parse Message
             Message recvMessage = new Message(recvJSON);
+            System.out.println("Received message from " + recvMessage.getSrcAddr() + ":" + recvMessage.getSrcPort());
 
             switch (recvMessage.getType()) {
                 // we get broadcast from Blender of a new node joining network
@@ -126,6 +128,10 @@ public class JondoConnectionHandler implements Runnable {
                     break;
                 case "VOTE_CAST":
                     handleVoteCast(recvMessage);
+                    break;
+                case "VOTE_RESULTS":
+                    System.out.println("Vote results received from " + recvMessage.getSrcAddr() + ":" + recvMessage.getSrcPort());
+                    handleVoteResults(recvMessage);
                     break;
             }
         } catch (IOException e) {
@@ -201,11 +207,24 @@ public class JondoConnectionHandler implements Runnable {
     public void handleVoteBroadcast(Message message) {
         Vote vote = message.getVote(); // Assuming getVote() method exists
         jondoDriver.setCurrentVote(vote);
+        jondoDriver.getSentVotes().put(vote.getVoteId(), vote);
         System.out.println("New Vote Received: " + vote.getQuestion());
         for (int i = 0; i < vote.getOptions().size(); i++) {
             System.out.println((i + 1) + ". " + vote.getOptions().get(i));
         }
         System.out.println("Please cast your vote by using the command '.vote'");
+    }
+
+    private void handleVoteResults(Message recvMessage) {
+        Vote vote = recvMessage.getVote();
+        List<String> results = vote.getResults();
+        System.out.println("Vote results for vote ID " + vote.getVoteId() + ": " + results);
+    }
+
+    private void handleVoteResults(Message recvMessage) {
+        Vote vote = recvMessage.getVote();
+        List<String> results = vote.getResults();
+        System.out.println("Vote results for vote ID " + vote.getVoteId() + ": " + results);
     }
 
     /**

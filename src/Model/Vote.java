@@ -17,6 +17,7 @@ public class Vote implements JSONSerializable {
     private String question;
     private List<String> options = new ArrayList<>();
     private String selection;
+    private List<String> results;
     private String voterId;
     private String timestamp;
 
@@ -30,6 +31,7 @@ public class Vote implements JSONSerializable {
         this.question = builder.question;
         this.options = builder.options;
         this.selection = builder.selection;
+        this.results = builder.results;
         this.voterId = builder.voterId;
         this.timestamp = builder.timestamp;
     }
@@ -80,6 +82,14 @@ public class Vote implements JSONSerializable {
         return selection;
     }
 
+    public List<String> getResults() {
+        return results;
+    }
+
+    public List<String> getResults() {
+        return results;
+    }
+
     /**
      * Serializes this Vote object into a JSON string.
      *
@@ -121,6 +131,14 @@ public class Vote implements JSONSerializable {
         if (jsonObject.containsKey("selection")) {
             selection = jsonObject.getString("selection");
         }
+        if (jsonObject.containsKey("results")) {
+            JSONArray results = jsonObject.getArray("results");
+            List<String> resultsList = new ArrayList<>();
+            for (int i = 0; i < results.size(); i++) {
+                resultsList.add(results.getString(i));
+            }
+            this.results = resultsList;
+        }
         if (jsonObject.containsKey("voterId")) {
             voterId = jsonObject.getString("voterId");
         }
@@ -149,6 +167,13 @@ public class Vote implements JSONSerializable {
         }
         if (selection != null)
             json.put("selection", selection);
+        if (results != null) {
+            JSONArray results = new JSONArray();
+            for (String result : this.results) {
+                results.add(result);
+            }
+            json.put("results", results);
+        }
         if (voterId != null)
             json.put("voterId", voterId);
         if (timestamp != null)
@@ -164,6 +189,7 @@ public class Vote implements JSONSerializable {
         private String question;
         private List<String> options;
         private String selection;
+        private List<String> results;
         private String voterId;
         private String timestamp;
 
@@ -183,6 +209,11 @@ public class Vote implements JSONSerializable {
 
         public Builder setSelection(String selection) {
             this.selection = selection;
+            return this;
+        }
+
+        public Builder setResults(List<String> results) {
+            this.results = results;
             return this;
         }
 
