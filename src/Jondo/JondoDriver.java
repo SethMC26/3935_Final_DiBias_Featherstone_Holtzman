@@ -9,12 +9,12 @@ import java.io.InvalidObjectException;
 import java.util.Scanner;
 
 import Model.Message;
+import Model.Vote;
 import merrimackutil.cli.LongOption;
 import merrimackutil.util.Tuple;
 
 public class JondoDriver {
-    private static volatile boolean readyForInput = false;
-    private static final Object inputLock = new Object();
+    private static Vote currVote;
 
     private static void usage() {
         System.out.println(
@@ -23,6 +23,11 @@ public class JondoDriver {
     }
 
     public static void main(String[] args) {
+        JondoDriver jondoDriver = new JondoDriver();
+        jondoDriver.start(args);
+    }
+
+    public void start(String[] args) {
         OptionParser parser = new OptionParser(args);
         LongOption[] opts = {
                 new LongOption("ip", true, 'i'),
@@ -69,12 +74,12 @@ public class JondoDriver {
             usage();
         }
 
-        Jondo jondo = new Jondo(jondoAddr, jondoPort, threads, blenderAddr, blenderPort);
+        Jondo jondo = new Jondo(jondoAddr, jondoPort, threads, blenderAddr, blenderPort, this);
         runCLI(jondo);
     }
 
-    public static void setReadyForInput(boolean state) {
-        readyForInput = state;
+    public void setCurrentVote(Vote vote) {
+        currVote = vote;
     }
 
     private static void runCLI(Jondo jondo) {
@@ -82,14 +87,16 @@ public class JondoDriver {
         String command;
         boolean running = true;
 
-        System.out.println("Type 'send' to send data, 'quit' to exit.");
+        System.out.println("Type '.vote' to cast vote, '.quit' to exit.");
 
         while (running) {
 
             System.out.print("> ");
+            // if the next line is an integer then it is a vote choice
             command = scanner.nextLine().trim();
 
             switch (command.toLowerCase()) {
+                /*
                 case "send":
                     System.out.print("Enter destination IP: ");
                     String dstAddr = scanner.nextLine().trim();
@@ -113,7 +120,23 @@ public class JondoDriver {
                         e.printStackTrace();
                     }
                     break;
-                case "quit":
+                 */    
+                case ".vote":
+                    System.out.println("Vote Received");
+                    System.out.println("Enter your choice (number): ");
+                    int choice = scanner.nextInt();
+                    if(choice < 1 || choice > currVote.getOptions().size()) {
+                        System.out.println("Invalid choice");
+                        System.out.println("Vote not sent");
+                        // TODO Handle more gracefully
+                        break;
+                    }
+                    scanner.nextLine(); // consume newline
+                    jondo.sendVoteCast(currVote.getVoteId(), currVote.getOptions().get(choice - 1));
+                    System.out.println("Vote sent");
+                    currVote = null; // reset current vote
+                    break;
+                case ".quit":
                     running = false;
                     break;
                 default:

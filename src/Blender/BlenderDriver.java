@@ -61,14 +61,14 @@ public class BlenderDriver {
         String command;
         boolean running = true;
 
-        System.out.println("Type 'vote' to create and broadcast a vote, 'quit' to exit.");
+        System.out.println("Type '.castvote' to create and broadcast a vote, '.quit' to exit.");
 
         while (running) {
             System.out.print("> ");
             command = scanner.nextLine().trim();
 
             switch (command.toLowerCase()) {
-                case "vote":
+                case ".castvote":
                     System.out.print("Enter vote description: ");
                     String voteDetails = scanner.nextLine().trim();
                     System.out.print("Enter vote options (comma separated): ");
@@ -79,7 +79,7 @@ public class BlenderDriver {
                     blender.broadcastVote(vote);
                     System.out.println("Vote broadcasted: " + vote.serialize());
                     break;
-                case "quit":
+                case ".quit":
                     running = false;
                     break;
                 default:

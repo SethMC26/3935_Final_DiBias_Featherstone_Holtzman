@@ -61,6 +61,10 @@ public class JondoConnectionHandler implements Runnable {
      * Random number generator
      */
     private Random randGen;
+    /**
+     * JondoDriver of this Jondo
+     */
+    private JondoDriver jondoDriver;
 
     /**
      * Creates new Connection hander
@@ -70,12 +74,13 @@ public class JondoConnectionHandler implements Runnable {
      *                      UID and values being Node object
      */
     public JondoConnectionHandler(Socket _sock, ConcurrentHashMap<String, Node> _routingTable, String _addr,
-            int _port, String _blenderAddr, int _blenderPort) {
+            int _port, String _blenderAddr, int _blenderPort, JondoDriver _jondoDriver) {
         addr = _addr;
         port = _port;
         blenderAddr = _blenderAddr;
         blenderPort = _blenderPort;
         sock = _sock;
+        jondoDriver = _jondoDriver;
 
         // get routing table from JONDO
         routingTable = _routingTable;
@@ -150,37 +155,26 @@ public class JondoConnectionHandler implements Runnable {
         send.println(ackMessage.serialize());
     }
 
-    private void handleVoteBroadcast(Message message) {
+    public void handleVoteBroadcast(Message message) {
         Vote vote = message.getVote(); // Assuming getVote() method exists
+        jondoDriver.setCurrentVote(vote);
         System.out.println("New Vote Received: " + vote.getQuestion());
         for (int i = 0; i < vote.getOptions().size(); i++) {
             System.out.println((i + 1) + ". " + vote.getOptions().get(i));
         }
-        System.out.print("Enter your choice (number): ");
-        Scanner scanner = new Scanner(System.in);
-        int choice = scanner.nextInt();
-        while (choice < 1 || choice > vote.getOptions().size()) {
-            System.out.println("Invalid choice. Please enter a number between 1 and " + vote.getOptions().size());
-            choice = scanner.nextInt();
-        }
-        String selectedOption = vote.getOptions().get(choice - 1);
-
-        sendVoteCast(vote.getVoteId(), selectedOption);
+        System.out.println("Please cast your vote by using the command '.vote'");
     }
 
-    private void sendVoteCast(String voteId, String selection) {
-        Vote vote = new Vote.Builder(voteId, null, null) // Assuming nulls are handled in Builder
-                .setSelection(selection)
-                .build();
-        Message voteCastMessage = new Message.Builder("VOTE_CAST")
-                .setVoteCast(blenderAddr, blenderPort, vote)
-                .build();
-        try {
-            forwardMessageToDestination(voteCastMessage);
-        } catch (IOException e) {
-            System.err.println("Error sending vote cast message");
-            e.printStackTrace();
+    private int getUserVoteChoice(Vote vote) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Enter your choice (number): ");
+        int choice = Integer.parseInt(scanner.nextLine().trim());
+        System.out.println("Choice: " + choice);
+        while (choice < 1 || choice > vote.getOptions().size()) {
+            System.out.println("Invalid choice. Please enter a number between 1 and " + vote.getOptions().size());
+            choice = Integer.parseInt(scanner.nextLine().trim());
         }
+        return choice;
     }
 
     private void forwardMessageToRandomNode(Message message) throws IOException {
