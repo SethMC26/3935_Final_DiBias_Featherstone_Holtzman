@@ -16,8 +16,48 @@ will randomly forward this node to another Jondo in the crowd, if it is tails we
 keep the circuit or virtual tunnel open and wait for a response before closing the circuit/virtual tunnel.
 
 The receiver nor the other nodes in network can be certain of who the true sender of a message is. In our implementation we set
-Prob. of heads to 0.66 or ~2/3. Using Geometric Random Variable with a success probability of 1/3 we can expect our ciruit to have
-a length of 3. 
+Prob. of heads to 0.66 or ~2/3. 
+
+#### Length of Virtual Tunnel
+The more nodes we send the message to the more "Anonymous" our message is however the longer it will take for a message to 
+get to receiver. To find the length of messages let X be a Geometric Random variable with the probability of success being
+1/3, to find expected number of times message will be forwarded before going to destination.
+
+Using the Expected value of a Geometric random variable our expected circuit length is 3
+![](https://media.discordapp.net/attachments/1225606930798612601/1237650472744259584/image.png?ex=663c6b53&is=663b19d3&hm=f5ac2f3f1040acc6817c51820e62ed9580462da5634835b7226bf71b51ca4a18&=&format=webp&quality=lossless)
+
+Using the variance of Geometric random variable our variance is 6
+![](https://media.discordapp.net/attachments/1225606930798612601/1237650568810332272/image.png?ex=663c6b6a&is=663b19ea&hm=38459437d36d08406e7f99589defeba2a1a2f33272db80d730315010e6d0a6dd&=&format=webp&quality=lossless&width=960&height=277)
+
+We can use these two facts to use Chebyshev's inequality to find the probability we end up on a tail of the distribution.
+We divide the result by 2 to get the right sided tail or probability our circuit length some number a or above
+![](https://media.discordapp.net/attachments/1225606930798612601/1237650652553805845/image.png?ex=663c6b7e&is=663b19fe&hm=b6267872de478eb5ad3a230b4a1a0027963b94ebba4368a4af89179d32079053&=&format=webp&quality=lossless&width=768&height=468)
+
+Graphically we can see the probabilities of large Circuit lengths get increasing less likely
+- The Prob. of circuit length being 6 or more messages is 0.083(8.3%)
+- The Prob. of circuit length being 9 or more messages is 0.037(3.7%)
+- The Prob. of circuit length being 12 or more messages is 0.021(2.1%)
+![](https://media.discordapp.net/attachments/1225606930798612601/1237652246192328744/image.png?ex=663c6cf9&is=663b1b79&hm=55700abd8bf6d1fe9f7fde6a26b6d95478e56d65aca1abf29cf5d55ffd8d71fc&=&format=webp&quality=lossless&width=688&height=468)
+##### Joining Crowd
+Once the blender is started nodes must join the crowd. 
+1. New Jondo sends a [HELLO Message](#hello---message) to the Blender
+2. Blender accepts new Jondo adds it to its own routing table and sends it a [WELCOME message](#welcome---message)
+3. Blender sends a [BROADCAST message](#broadcast---message) to all of the nodes in its routing table(all nodes in crowd)
+   4. Each Jondo will update their own routing table with the new Jondo
+
+![](https://media.discordapp.net/attachments/1225606930798612601/1237507026159009862/blenderjoin5.jpg?ex=663be5ba&is=663a943a&hm=44527f054e393705c174abe8c938809c7aa60ca106871c0d20062c4931478020&=&format=webp&width=512&height=468)
+
+##### Receiving data message
+To send data we use a [DATA](#data---message)
+1. Flip coin
+   2. If heads forward message to a random Jondo(possibly ourselves)
+   3. If tails send message to destination
+2. Keep socket open, once a reply message comes across forward it to node that sent us message then close socket
+
+#### Sending a message object
+To Send a message object we send a [DATA](#data---message) to a random node in the Crowd
+![](https://media.discordapp.net/attachments/1225606930798612601/1237645039400652840/send3.drawio.png?ex=663c6643&is=663b14c3&hm=3a406141f08c589f5ba9ffdb28c42e42ba1546e0ed26b69e940212bd9c7f6a8e&=&format=webp&quality=lossless&width=362&height=468)
+![](https://media.discordapp.net/attachments/1225606930798612601/1237646261793067009/send4.drawio.png?ex=663c6767&is=663b15e7&hm=52453759f0883ddfe488da19eca7b6e9d736aaf00ec99f597bee1b120c7d3361&=&format=webp&quality=lossless&width=362&height=468)
 
 #### Voting via crowds
 We have added a simple CLI on top of the crowds network to allow the blender to issue a ballot and nodes to vote anonymously.
