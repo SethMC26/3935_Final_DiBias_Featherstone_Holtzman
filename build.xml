@@ -58,7 +58,7 @@
     </target>
 
         <!-- Combined target to create both Blender and Jondo JARs -->
-    <target name="dist-all" depends="dist-blender,dist-jondo" description="Generate jar files for both Blender and Jondo">
+    <target name="dist" depends="dist-blender,dist-jondo" description="Generate jar files for both Blender and Jondo">
         <echo message="Both Blender and Jondo JAR files have been created."/>
     </target>
 
