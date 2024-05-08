@@ -42,7 +42,6 @@ public class Vote implements JSONSerializable {
      * @param builder the Builder instance containing the properties for the Vote object.
      */
     public Vote(JSONObject jsonObject) throws InvalidObjectException {
-        System.out.println("JSON OBJECT: " + jsonObject.getFormattedJSON());
         deserialize(jsonObject);
     }
 
