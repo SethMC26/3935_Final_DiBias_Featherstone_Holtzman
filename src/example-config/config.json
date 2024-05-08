@@ -1,0 +1,8 @@
+{
+  "type":"jondo",
+  "addr": "127.0.0.1",
+  "port": 6001,
+  "threads" : 3,
+  "blenderAddr" : "127.0.0.1",
+  "blenderPort" : 5001
+}
