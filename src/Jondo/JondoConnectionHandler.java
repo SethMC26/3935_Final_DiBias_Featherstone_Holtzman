@@ -61,7 +61,7 @@ public class JondoConnectionHandler implements Runnable {
     /**
      * Random number generator
      */
-    private Random randGen;
+    private SecureRandom randGen;
     /**
      * JondoDriver of this Jondo
      */
@@ -92,7 +92,7 @@ public class JondoConnectionHandler implements Runnable {
 
         // 2/3 chance of fording node
         probHead = 66;
-        randGen = new Random();
+        randGen = new SecureRandom();
     }
 
     /**

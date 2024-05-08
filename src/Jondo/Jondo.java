@@ -19,6 +19,7 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.Scanner;
@@ -41,7 +42,7 @@ public class Jondo {
     private ServerSocket server;
     private ConcurrentHashMap<String, Node> routingTable;
     private JondoDriver jondoDriver;
-    private Random randGen;
+    private SecureRandom randGen;
 
     /**
      * Constructor for creating a new Jondo node.
@@ -64,7 +65,7 @@ public class Jondo {
 
         routingTable = new ConcurrentHashMap<>();
 
-        randGen = new Random();
+        randGen = new SecureRandom();
 
         // Connect to blender and try to join crowd
         try {
