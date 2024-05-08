@@ -112,7 +112,6 @@ public class JondoConnectionHandler implements Runnable {
 
             // parse Message
             Message recvMessage = new Message(recvJSON);
-            System.out.println("Received message from " + recvMessage.getSrcAddr() + ":" + recvMessage.getSrcPort());
 
             switch (recvMessage.getType()) {
                 // we get broadcast from Blender of a new node joining network
@@ -130,7 +129,6 @@ public class JondoConnectionHandler implements Runnable {
                     handleVoteCast(recvMessage);
                     break;
                 case "VOTE_RESULTS":
-                    System.out.println("Vote results received from " + recvMessage.getSrcAddr() + ":" + recvMessage.getSrcPort());
                     handleVoteResults(recvMessage);
                     break;
             }
@@ -151,7 +149,6 @@ public class JondoConnectionHandler implements Runnable {
         if (!routingTable.containsKey(newJondo.getUid())) {
             // put node in routing table
             routingTable.put(newJondo.getUid(), newJondo);
-            System.out.println("Got Broadcast message updating routingTable");
         } else {
             // print error message
             System.err.println("Blender: Error adding Jondo, already in Routing Table");
@@ -176,7 +173,6 @@ public class JondoConnectionHandler implements Runnable {
         Message ackMessage = new Message.Builder("ACK")
                 .setAck(addr, port)
                 .build();
-        System.out.println("Sending ACK: " + ackMessage.serialize());
         send.println(ackMessage.serialize());
     }
 
@@ -208,11 +204,10 @@ public class JondoConnectionHandler implements Runnable {
         Vote vote = message.getVote(); // Assuming getVote() method exists
         jondoDriver.setCurrentVote(vote);
         jondoDriver.getSentVotes().put(vote.getVoteId(), vote);
-        System.out.println("New Vote Received: " + vote.getQuestion());
         for (int i = 0; i < vote.getOptions().size(); i++) {
             System.out.println((i + 1) + ". " + vote.getOptions().get(i));
         }
-        System.out.println("Please cast your vote by using the command '.vote'");
+        System.out.println("New Vote has been issued! Please cast your vote by using the command '.vote'");
     }
 
     private void handleVoteResults(Message recvMessage) {
@@ -232,7 +227,6 @@ public class JondoConnectionHandler implements Runnable {
         try (Socket nodeSock = new Socket(message.getDstAddr(), message.getDstPort());
                 PrintWriter nodeSend = new PrintWriter(nodeSock.getOutputStream(), true)) {
             nodeSend.println(message.serialize());
-            System.out.println("Sent directly to destination: " + message.getDstAddr());
         }
     }
 
@@ -243,12 +237,11 @@ public class JondoConnectionHandler implements Runnable {
      * @throws IOException if there is an error during forwarding.
      */
     private void forwardMessageToRandomNode(Message message) throws IOException {
-        Node randNode = selectRandomNode(message.getSrcAddr(), message.getSrcPort());
+        Node randNode = selectRandomNode();
         if (randNode != null) {
             try (Socket nodeSock = new Socket(randNode.getAddr(), randNode.getPort());
                     PrintWriter nodeSend = new PrintWriter(nodeSock.getOutputStream(), true)) {
                 nodeSend.println(message.serialize());
-                System.out.println("Forwarded to random node: " + randNode.getAddr());
             }
         }
     }
@@ -269,7 +262,7 @@ public class JondoConnectionHandler implements Runnable {
      *
      * @return The randomly selected Node, or null if no nodes are available.
      */
-    private Node selectRandomNode(String srcAddr, int srcPort) {
+    private Node selectRandomNode() {
         ArrayList<String> keys = new ArrayList<>(routingTable.keySet());
 
         if (keys.isEmpty()) {
@@ -301,6 +294,7 @@ public class JondoConnectionHandler implements Runnable {
      */
     private void processMessage(Message message) {
         // process message
-        System.out.println("Processing message: " + message);
+        //
+        // System.out.println("Processing message: " + message);
     }
 }

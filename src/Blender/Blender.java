@@ -112,7 +112,6 @@ public class Blender {
         Node currNode = null;
 
         try {
-            System.out.println();
             // for each Jondo in routing table send broadcast message
             for (String uid : routingTable.keySet()) {
 
@@ -125,8 +124,6 @@ public class Blender {
                     Socket nodeSock = new Socket(currNode.getAddr(), currNode.getPort());
 
                     PrintWriter send = new PrintWriter(nodeSock.getOutputStream(), true);
-
-                    System.out.println("Sending broadcast to " + nodeSock.getRemoteSocketAddress());
 
                     send.println(broadcast.serialize());
 
@@ -202,11 +199,9 @@ public class Blender {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.submit(() -> {
             try (ServerSocket serverSocket = new ServerSocket(port)) {
+
                 while (!Thread.currentThread().isInterrupted()) {
                     Socket clientSocket = serverSocket.accept();
-
-                    System.out.println(
-                            "Connected to " + clientSocket.getInetAddress() + ":" + clientSocket.getPort() + "\n");
 
                     // deal with connection on new thread from the Connection Handler Pool
                     pool.execute(new BlenderConnectionHandler(this, clientSocket));

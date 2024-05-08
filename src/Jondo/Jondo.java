@@ -156,8 +156,6 @@ public class Jondo {
             // System.out.println("Reply: " + reply);
             Message replyMessage = new Message(readObject(reply));
 
-            System.out.println("Reply TYPE: " + replyMessage.getType());
-            System.out.println(replyMessage.getType().equals("ACK"));
             if (!replyMessage.getType().equals("ACK")) {
                 System.out.println("Error: " + replyMessage.getType());
                 System.err.println("Jondo Connection: Message must be of ACK Type");
@@ -209,7 +207,6 @@ public class Jondo {
             try (Socket nodeSock = new Socket(randNode.getAddr(), randNode.getPort());
                     PrintWriter nodeSend = new PrintWriter(nodeSock.getOutputStream(), true)) {
                 nodeSend.println(message.serialize());
-                System.out.println("Forwarded to random node: " + randNode.getAddr());
             }
         }
     }
@@ -223,7 +220,6 @@ public class Jondo {
         try (Socket nodeSock = new Socket(message.getDstAddr(), message.getDstPort());
                 PrintWriter nodeSend = new PrintWriter(nodeSock.getOutputStream(), true)) {
             nodeSend.println(message.serialize());
-            System.out.println("Sent directly to destination: " + message.getDstAddr());
         }
     }
 
@@ -262,8 +258,6 @@ public class Jondo {
                     // get connection
                     Socket sock = server.accept();
 
-                    System.out.println();
-                    System.out.println("Connected to " + sock.getInetAddress() + ":" + sock.getPort());
 
                     // handle connections on new thread
                     pool.execute(new JondoConnectionHandler(sock, routingTable, addr, port, blenderAddr, blenderPort,
