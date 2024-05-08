@@ -1,5 +1,5 @@
 # 3935_DiBias_Featherstone_Holtzman
-To use our project feel free to skip ahead to the [Quick Start](#quick-start)
+To use our project feel free to skip ahead to the [Quick Start](#quick-start) and also see [releases](https://github.com/SethMC26/3935_Final_DiBias_Featherstone_Holtzman/releases/tag/v1.0.0)
 # Voting via the Crowds network
 We have created a voting system using the Crowds Overlay network is an anonymity network based on this [paper](https://web.archive.org/web/20051212103028/http://avirubin.com/crowds.pdf).
 
@@ -65,6 +65,8 @@ Each node is also able to see results of the ballot.
 
 
 # Quick Start
+## Releases
+Our releases page has precompiled JAR files for both Blender and Jondo [here](https://github.com/SethMC26/3935_Final_DiBias_Featherstone_Holtzman/releases/tag/v1.0.0)
 ## Using ant to create jars 
 Use this command via the terminal to build jar for Blender and Jondo . This will create a new directory called dist with Blender.jar and Jondo.jar files
 ```shell
