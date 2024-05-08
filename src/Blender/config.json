@@ -1,0 +1,6 @@
+{
+  "type":"blender",
+  "addr": "127.0.0.1",
+  "port": 5001,
+  "threads" : 10
+}

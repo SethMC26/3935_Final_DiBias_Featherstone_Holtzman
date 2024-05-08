@@ -1,8 +1,12 @@
 package Jondo;
 
+import Model.Configuration;
 import merrimackutil.cli.OptionParser;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InvalidObjectException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -13,18 +17,34 @@ import Model.Vote;
 import merrimackutil.cli.LongOption;
 import merrimackutil.util.Tuple;
 
+import static merrimackutil.json.JsonIO.readObject;
+
 public class JondoDriver {
     private static Jondo jondo;
     private static String jondoAddr;
     private static int jondoPort;
     private static String blenderAddr;
     private static int blenderPort;
+    private static String config;
     private static Vote currVote;
     private static HashMap<String, Vote> sentVotes = new HashMap<>(); // Store sent votes
 
     private static void usage() {
-        System.out.println(
-                "Usage: java JondoDriver --ip <Jondo IP> --port <Jondo Port> --threads <Threads> --blenderip <Blender IP> --blenderport <Blender Port>");
+        System.out.println("Usage:");
+        System.out.println("   Jondo --ip <Jondo IP> --port <Jondo Port> --threads <# of threads> " +
+                "--blenderip <Blender IP> --blenderport ");
+        System.out.println("   Jondo --help (displays the usage)");
+        System.out.println("   Jondo --config <config file>");
+        System.out.println("   Jondo (use default config)");
+        System.out.println("Options:");
+        System.out.println("  -h, --help\t\t Displays the usage");
+        System.out.println("  -i, --ip\t\t Jondo's IP address");
+        System.out.println("  -p, --port\t\tPort that Jondo will listen on");
+        System.out.println("  -t, --threads\t\tNumber of threads Jondo can use");
+        System.out.println("  -b, --blenderip\t\t IP address of the Blender server");
+        System.out.println("  -r, --blenderport\t\t Port of the Blender server");
+        System.out.println("  -c, --config\t\tConfig file to use.");
+        System.out.println(" No options specified will use default config");
         System.exit(1);
     }
 
@@ -40,16 +60,20 @@ public class JondoDriver {
                 new LongOption("port", true, 'p'),
                 new LongOption("threads", true, 't'),
                 new LongOption("blenderip", true, 'b'),
-                new LongOption("blenderport", true, 'r')
+                new LongOption("blenderport", true, 'r'),
+                new LongOption("config", true,'c')
         };
         parser.setLongOpts(opts);
-        parser.setOptString("i:p:t:b:r:");
+        parser.setOptString("i:p:t:b:r:c:");
 
         jondoAddr = null;
         jondoPort = 0;
         int threads = 0;
         blenderAddr = null;
         blenderPort = 0;
+        config = null;
+
+        boolean doConfig = false;
 
         Tuple<Character, String> currOpt;
         while (parser.getOptIdx() != args.length) {
@@ -70,15 +94,55 @@ public class JondoDriver {
                 case 'r':
                     blenderPort = Integer.parseInt(currOpt.getSecond());
                     break;
+                case 'c':
+                    config = currOpt.getSecond();
+                    doConfig = true;
+                    break;
+                case 'h':
+                    usage();
+                    break;
                 case '?':
                     usage();
                     break;
             }
         }
 
-        if (jondoAddr == null || jondoPort == 0 || threads == 0 || blenderAddr == null || blenderPort == 0) {
+        if (args.length == 0) {
+            System.out.println("Using the default config file");
+            config = "src/Jondo/config.json";
+            doConfig = true;
+        }
+
+        if ((jondoAddr == null || jondoPort == 0 || threads == 0 || blenderAddr == null || blenderPort == 0) && (!doConfig)) {
             usage();
         }
+
+        if (doConfig && (!(jondoAddr == null && jondoPort == 0 && threads == 0 && blenderAddr == null && blenderPort == 0))) {
+            usage();
+        }
+
+        if (doConfig) {
+            try {
+                Configuration configFile = new Configuration(readObject(new File(config)));
+                jondoAddr = configFile.getAddr();
+                jondoPort = configFile.getPort();
+                threads = configFile.getThreads();
+                blenderAddr = configFile.getBlenderAddr();
+                blenderPort = configFile.getBlenderPort();
+
+            } catch (FileNotFoundException e) {
+                System.err.println("Config file not found! Please check path: " + config);
+                e.printStackTrace();
+                return;
+            } catch (InvalidObjectException e) {
+                System.err.println("Error parsing config file");
+                e.printStackTrace();
+                return;
+            }
+        }
+
+        System.out.println("Starting Jondo on " + jondoAddr + "/" + jondoPort + " with " +threads + " threads " +
+                " with blender on " + blenderAddr + "/" +blenderPort);
 
         jondo = new Jondo(jondoAddr, jondoPort, threads, blenderAddr, blenderPort, this);
         runCLI(jondo);
@@ -128,7 +192,7 @@ public class JondoDriver {
         String command;
         boolean running = true;
 
-        System.out.println("Type '.vote' to cast vote, '.quit' to exit.");
+        System.out.println("Type '.vote' to cast vote, .results to get results, .quit' to exit, .help to see this menu.");
 
         while (running) {
 
@@ -137,31 +201,6 @@ public class JondoDriver {
             command = scanner.nextLine().trim();
 
             switch (command.toLowerCase()) {
-                /*
-                 * case "send":
-                 * System.out.print("Enter destination IP: ");
-                 * String dstAddr = scanner.nextLine().trim();
-                 * System.out.print("Enter destination port: ");
-                 * int dstPort = Integer.parseInt(scanner.nextLine().trim());
-                 * System.out.print("Enter message: ");
-                 * String message = scanner.nextLine().trim();
-                 * 
-                 * String reply = jondo.send(message, dstAddr, dstPort);
-                 * System.out.println("Reply: " + reply);
-                 * JSONObject rply = readObject(reply);
-                 * try {
-                 * Message rplyMsg = new Message(rply);
-                 * if (!rplyMsg.getType().equals("ACK")) {
-                 * System.out.println("Error for message TYPE: " + rplyMsg.getType());
-                 * } else {
-                 * System.out.println("ACK Received");
-                 * }
-                 * } catch (InvalidObjectException e) {
-                 * System.out.println("Error parsing reply: " + e.getMessage());
-                 * e.printStackTrace();
-                 * }
-                 * break;
-                 */
                 case ".vote":
                     System.out.println("Vote Received");
                     System.out.println("Enter your choice (number): ");
@@ -184,13 +223,16 @@ public class JondoDriver {
                     scanner.nextLine(); // consume newline
                     queryVoteResults(voteChoice);
                     break;
+                case ".help":
+                    System.out.println("Type '.vote' to cast vote, .results to get results, .quit' to exit, .help to see this menu.");
+                    break;
                 case ".quit":
                     running = false;
+                    System.exit(0);
                     break;
                 default:
                     System.out.println("Unknown command.");
                     break;
-
             }
         }
         scanner.close();
